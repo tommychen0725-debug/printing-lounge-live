@@ -447,7 +447,7 @@
 
     /* ── PRESENT MODE ── */
     body.present-mode .img-slot              { pointer-events: none !important; cursor: default !important; }
-    body.present-mode textarea               { pointer-events: none !important; cursor: default !important; user-select: none; }
+    body.present-mode textarea               { cursor: default !important; user-select: text; }
     body.present-mode .img-slot.tf-slot.has-image { pointer-events: all !important; cursor: pointer !important; }
 
     /* drag cursor */
@@ -766,6 +766,7 @@ async function showApp(adminMode = false) {
     document.body.classList.add('present-mode');
     document.getElementById('mode-btn').style.display = 'none';
     editMode = false;
+    document.querySelectorAll('.toelichting-ta').forEach(ta => { ta.readOnly = true; });
   }
 
   showSlide(0);
@@ -1208,6 +1209,7 @@ function toggleMode() {
   editMode = !editMode;
   document.body.classList.toggle('edit-mode',    editMode);
   document.body.classList.toggle('present-mode', !editMode);
+  document.querySelectorAll('.toelichting-ta').forEach(ta => { ta.readOnly = !editMode; });
   const btn   = document.getElementById('mode-btn');
   const label = document.getElementById('mode-label');
   if (editMode) {
@@ -1285,6 +1287,8 @@ document.addEventListener('mousemove', e => {
 document.addEventListener('mouseup', () => {
   panning = false;
   document.body.classList.remove('panning-active');
+  // Reset panDidMove after any same-position click event fires (or immediately if no click fires)
+  setTimeout(() => { panDidMove = false; }, 0);
 });
 document.addEventListener('click', e => {
   if (!panDidMove) return;
