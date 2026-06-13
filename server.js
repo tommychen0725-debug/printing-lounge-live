@@ -220,11 +220,7 @@ app.post('/api/save', requireLiveAccess, async (req, res) => {
   const { slide_idx, slot_key, value } = req.body || {};
   if (slide_idx === undefined || !slot_key) return res.status(400).json({ error: 'Velden ontbreken' });
 
-  const liveId = req.user.role === 'admin'
-    ? (await supabase.from('lives').select('id').eq('slug', req.params?.slug || '').single()).data?.id || req.body.live_id
-    : req.user.live_id;
-
-  // For admin, get live_id from slug in body or resolve from token
+  // Admin passes live_id in body; guest has it in JWT
   const resolvedLiveId = req.user.role === 'admin' ? req.body.live_id : req.user.live_id;
   if (!resolvedLiveId) return res.status(400).json({ error: 'live_id ontbreekt' });
 
