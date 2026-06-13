@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Printing Lounge — Live Review</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cream:   #EDE8DF;
+      --dark:    #2C1810;
+      --accent:  #7B5233;
+      --white:   #FFFFFF;
+      --muted:   rgba(44,24,16,0.4);
+      --divider: rgba(44,24,16,0.08);
+      --dark-bg: #1A0F07;
+      --font:    'DM Sans', system-ui, sans-serif;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: #0d0805;
+      font-family: var(--font);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ══════════════════════
+       AUTH OVERLAY
+    ══════════════════════ */
+    #auth-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--dark-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.3s;
+    }
+    #auth-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* background glow */
+    #auth-overlay::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(123,82,51,0.16) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    #auth-card {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      width: 100%;
+      max-width: 420px;
+      padding: 0 24px;
+      text-align: center;
+    }
+
+    .auth-logo {
+      font-size: 12px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .auth-live-title {
+      font-size: clamp(22px, 4vw, 32px);
+      font-weight: 700;
+      color: #fff;
+      line-height: 1.2;
+      margin-bottom: 10px;
+      min-height: 40px;
+    }
+
+    .auth-live-sub {
+      font-size: 13px;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 6px;
+    }
+
+    .auth-live-date {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 36px;
+    }
+
+    .auth-rule {
+      width: 44px; height: 2px;
+      background: var(--accent);
+      border-radius: 2px;
+      margin: 0 auto 32px;
+    }
+
+    .auth-form {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .auth-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      text-align: left;
+    }
+
+    .auth-input {
+      width: 100%;
+      background: rgba(255,255,255,0.07);
+      border: 1.5px solid rgba(255,255,255,0.14);
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-family: var(--font);
+      font-size: 16px;
+      font-weight: 500;
+      color: #fff;
+      letter-spacing: 6px;
+      outline: none;
+      transition: border-color 0.18s;
+    }
+    .auth-input:focus { border-color: var(--accent); }
+    .auth-input::placeholder { letter-spacing: 3px; color: rgba(255,255,255,0.25); }
+
+    .auth-error {
+      font-size: 12.5px;
+      color: #e74c3c;
+      min-height: 18px;
+      text-align: left;
+    }
+
+    .auth-btn {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 14px;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.15s, transform 0.1s;
+      margin-top: 4px;
+    }
+    .auth-btn:hover { background: #6a4529; transform: scale(1.01); }
+    .auth-btn:disabled { opacity: 0.6; cursor: default; transform: none; }
+    .auth-btn span { font-size: 18px; }
+
+    .auth-back {
+      margin-top: 18px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.25);
+      cursor: pointer;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .auth-back:hover { color: rgba(255,255,255,0.5); }
+
+    /* ══════════════════════
+       PRESENTATION APP
+    ══════════════════════ */
+    #app {
+      position: fixed;
+      inset: 0;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+    #app.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* ── SLIDES ── */
+    #slides { width: 100%; height: 100%; position: relative; }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(60px);
+      transition: opacity 0.28s ease, transform 0.28s ease;
+    }
+    .slide.active {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateX(0);
+    }
+    .slide.exit-left  { opacity: 0; transform: translateX(-60px); }
+    .slide.exit-right { opacity: 0; transform: translateX(60px); }
+
+    /* ── TITLE SLIDE ── */
+    .slide-title {
+      background: var(--dark-bg);
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .slide-title::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(123,82,51,0.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .title-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 22px;
+      z-index: 2;
+    }
+    .title-pill {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 100px; padding: 7px 18px;
+      font-size: 10.5px; font-weight: 600; letter-spacing: 2px;
+      text-transform: uppercase; color: rgba(255,255,255,0.7);
+    }
+    .title-pill::before { content: '●'; color: var(--accent); font-size: 7px; }
+    .title-logo-text {
+      font-size: 13px; font-weight: 700;
+      color: rgba(255,255,255,0.35); letter-spacing: 2px; text-transform: uppercase;
+    }
+    .title-h1 {
+      font-size: clamp(36px, 4.5vw, 68px); font-weight: 700;
+      color: var(--white); line-height: 1.08; letter-spacing: -0.5px;
+    }
+    .title-rule { width: 48px; height: 2px; background: var(--accent); border-radius: 2px; }
+    .title-meta { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .title-date {
+      font-size: 13px; font-weight: 600; letter-spacing: 1.5px;
+      text-transform: uppercase; color: var(--accent);
+    }
+    .title-sub { font-size: 15px; color: rgba(255,255,255,0.4); }
+    .title-footer-text {
+      position: absolute; bottom: 28px; left: 0; right: 0;
+      text-align: center; font-size: 12px; color: rgba(255,255,255,0.22); letter-spacing: 0.5px;
+    }
+
+    /* ── TRADE SLIDE ── */
+    .slide-trade { background: var(--cream); }
+
+    .slide-header {
+      background: var(--dark); height: 64px; flex-shrink: 0;
+      display: flex; align-items: center; padding: 0 28px; gap: 16px;
+    }
+    .hdr-logo { font-size: 14px; font-weight: 700; color: var(--white); letter-spacing: 0.3px; flex-shrink: 0; }
+    .hdr-sep  { width: 1px; height: 18px; background: rgba(255,255,255,0.18); flex-shrink: 0; }
+    .hdr-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 100px; padding: 4px 13px;
+      font-size: 10.5px; font-weight: 600; letter-spacing: 1.5px;
+      text-transform: uppercase; color: var(--white); flex-shrink: 0;
+    }
+    .hdr-pill::before { content: '●'; color: var(--accent); font-size: 7px; }
+    .hdr-date     { font-size: 13px; color: rgba(255,255,255,0.5); }
+    .hdr-spacer   { flex: 1; }
+    .hdr-week-badge {
+      font-size: 9.5px; font-weight: 600; letter-spacing: 1px;
+      text-transform: uppercase; color: rgba(255,255,255,0.35);
+      background: rgba(255,255,255,0.07); border-radius: 4px; padding: 3px 8px; flex-shrink: 0;
+    }
+    .hdr-counter  { font-size: 11.5px; color: rgba(255,255,255,0.3); font-weight: 500; letter-spacing: 0.5px; flex-shrink: 0; }
+    .hdr-w2       { border-bottom: 2px solid var(--accent); }
+
+    .slide-body {
+      flex: 1; display: flex; padding: 18px 22px 14px;
+      gap: 18px; min-height: 0; overflow: hidden;
+    }
+    .col-main  { flex: 0 0 62%; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+    .col-right { flex: 1; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+
+    .sec-label {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 10px; font-weight: 600; letter-spacing: 1.5px;
+      text-transform: uppercase; color: var(--muted); flex-shrink: 0;
+    }
+    .sec-label::before { content: '●'; color: var(--accent); font-size: 6px; }
+
+    .img-slot {
+      background: var(--white); border: 1.5px dashed rgba(44,24,16,0.15);
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; position: relative; overflow: hidden;
+      transition: border-color 0.18s, box-shadow 0.18s;
+    }
+    .img-slot:hover { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(123,82,51,0.08); }
+    .img-slot.has-image { border-style: solid; border-color: var(--divider); }
+
+    .img-slot img {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: contain; display: none;
+    }
+    .img-slot.has-image img { display: block; }
+
+    .slot-placeholder {
+      display: flex; flex-direction: column; align-items: center; gap: 9px;
+      pointer-events: none; user-select: none;
+    }
+    .img-slot.has-image .slot-placeholder { display: none; }
+
+    .slot-icon {
+      width: 38px; height: 38px; border: 2px dashed rgba(44,24,16,0.18);
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      color: rgba(44,24,16,0.25); font-size: 20px; font-weight: 300;
+    }
+    .slot-text { font-size: 11.5px; font-weight: 500; color: var(--muted); }
+
+    .remove-btn {
+      position: absolute; top: 8px; right: 8px;
+      width: 26px; height: 26px; background: var(--dark); color: var(--white);
+      border: none; border-radius: 50%; font-size: 13px; cursor: pointer;
+      display: none; align-items: center; justify-content: center; z-index: 10; line-height: 1;
+    }
+    .img-slot.has-image:hover .remove-btn { display: flex; }
+    .remove-btn:hover { background: #c0392b; }
+
+    .slot-main { flex: 1; min-height: 0; }
+    .tf-section { flex-shrink: 0; display: flex; flex-direction: column; gap: 10px; }
+    .tf-row { display: flex; gap: 10px; height: 170px; }
+    .slot-tf { flex: 1; height: 100%; }
+    .slot-tf .slot-icon { width: 28px; height: 28px; font-size: 15px; }
+    .slot-tf .slot-text { font-size: 10.5px; }
+
+    .toelichting-wrap { flex: 1; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+    .toelichting-card {
+      flex: 1; background: var(--white); border: 1px solid var(--divider);
+      border-radius: 10px; box-shadow: 0 1px 3px rgba(44,24,16,0.05);
+      padding: 14px 16px; min-height: 0; display: flex; flex-direction: column;
+    }
+    .toelichting-ta {
+      flex: 1; width: 100%; border: none; outline: none; resize: none;
+      font-family: var(--font); font-size: 13.5px; font-weight: 400;
+      line-height: 1.65; color: var(--dark); background: transparent;
+    }
+    .toelichting-ta::placeholder { color: var(--muted); }
+
+    .slide-footer {
+      height: 46px; flex-shrink: 0; display: flex; align-items: center;
+      padding: 0 28px; border-top: 1px solid var(--divider);
+    }
+    .ft-brand  { font-size: 12px; font-weight: 700; color: var(--dark); }
+    .ft-tag    { font-size: 12px; color: var(--muted); font-style: italic; margin-left: 5px; }
+    .ft-spacer { flex: 1; }
+    .ft-disc   { font-size: 11px; color: var(--muted); }
+
+    input[type="file"] { display: none !important; }
+
+    /* TF promote hint */
+    .img-slot.tf-slot.has-image::after {
+      content: '\2191  Maak hoofdchart';
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: rgba(44,24,16,0.72); color: #fff;
+      font-size: 9.5px; font-weight: 600; letter-spacing: 0.5px;
+      text-align: center; padding: 5px 4px;
+      opacity: 0; transition: opacity 0.18s; pointer-events: none;
+      border-radius: 0 0 9px 9px;
+    }
+    .img-slot.tf-slot.has-image:hover::after { opacity: 1; }
+
+    /* ── NAVIGATION ── */
+    .nav-btn {
+      position: fixed; top: 50%; transform: translateY(-50%);
+      width: 42px; height: 42px; background: var(--dark); color: var(--white);
+      border: none; border-radius: 50%; font-size: 16px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0.55; transition: opacity 0.18s; z-index: 200;
+    }
+    .nav-btn:hover { opacity: 1; }
+    .nav-btn:disabled { opacity: 0.15; cursor: default; pointer-events: none; }
+    #btn-prev { left: 10px; }
+    #btn-next { right: 10px; }
+
+    #slide-counter {
+      position: fixed; bottom: 14px; right: 20px;
+      font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.5px;
+      z-index: 200; background: rgba(237,232,223,0.85); padding: 4px 10px;
+      border-radius: 100px; backdrop-filter: blur(4px);
+    }
+
+    #kb-hint {
+      position: fixed; bottom: 14px; left: 20px;
+      font-size: 10.5px; color: var(--muted); z-index: 200;
+      background: rgba(237,232,223,0.85); padding: 4px 10px;
+      border-radius: 100px; backdrop-filter: blur(4px);
+    }
+
+    /* ── ZOOM IND ── */
+    #zoom-ind {
+      position: fixed; top: 76px; right: 18px;
+      background: var(--dark); color: #fff;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+      padding: 5px 12px; border-radius: 100px; z-index: 500;
+      opacity: 0; transform: translateY(-4px);
+      transition: opacity 0.2s, transform 0.2s; pointer-events: none;
+    }
+    #zoom-ind.show { opacity: 1; transform: translateY(0); }
+
+    /* ── MODE BUTTON ── */
+    #mode-btn {
+      position: fixed; top: 14px; right: 14px; z-index: 600;
+      background: var(--dark); color: #fff; border: none;
+      border-radius: 100px; padding: 9px 20px;
+      font-size: 12px; font-weight: 600; font-family: var(--font); letter-spacing: 0.5px;
+      cursor: pointer; display: flex; align-items: center; gap: 7px;
+      transition: background 0.15s, transform 0.1s;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+    }
+    #mode-btn:hover { background: #3d2418; transform: scale(1.03); }
+    #mode-btn.live  { background: #219a52; }
+    #mode-btn.live:hover { background: #1a7d43; }
+    #mode-btn .dot  { width: 7px; height: 7px; border-radius: 50%; background: #fff; flex-shrink: 0; }
+    #mode-btn.live .dot { background: #ff4444; animation: blink 1.4s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ── EDIT MODE ── */
+    body.edit-mode #draw-toolbar { display: none !important; }
+    body.edit-mode #zoom-ind     { display: none !important; }
+
+    /* ── PRESENT MODE ── */
+    body.present-mode .img-slot              { pointer-events: none !important; cursor: default !important; }
+    body.present-mode textarea               { pointer-events: none !important; cursor: default !important; user-select: none; }
+    body.present-mode .img-slot.tf-slot.has-image { pointer-events: all !important; cursor: pointer !important; }
+
+    /* drag cursor */
+    body.panning-active, body.panning-active * { cursor: grabbing !important; }
+
+    /* smooth zoom */
+    .slide-trade { will-change: transform; }
+
+    /* ── DRAW CANVAS ── */
+    #draw-canvas {
+      position: fixed; inset: 0; z-index: 300;
+      pointer-events: none; cursor: crosshair;
+    }
+    #draw-canvas.active { pointer-events: all; }
+
+    /* ── DRAW TOOLBAR ── */
+    #draw-toolbar {
+      position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+      z-index: 400; display: flex; align-items: center; gap: 6px;
+      background: var(--dark); border-radius: 100px; padding: 8px 14px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.35); user-select: none;
+    }
+    .tb-sep  { width: 1px; height: 20px; background: rgba(255,255,255,0.15); flex-shrink: 0; margin: 0 2px; }
+    .tb-btn  {
+      width: 34px; height: 34px; border-radius: 50%; border: none;
+      background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7);
+      font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, color 0.15s; flex-shrink: 0;
+    }
+    .tb-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
+    .tb-btn.active { background: var(--accent); color: #fff; }
+    .tb-btn.danger:hover { background: #c0392b; color: #fff; }
+    .tb-color {
+      width: 24px; height: 24px; border-radius: 50%; border: 2.5px solid transparent;
+      cursor: pointer; transition: transform 0.12s, border-color 0.12s; flex-shrink: 0;
+    }
+    .tb-color:hover { transform: scale(1.15); }
+    .tb-color.active { border-color: #fff; transform: scale(1.1); }
+    .tb-size {
+      display: flex; align-items: center; justify-content: center;
+      width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+      background: rgba(255,255,255,0.08); transition: background 0.15s; flex-shrink: 0;
+    }
+    .tb-size:hover { background: rgba(255,255,255,0.18); }
+    .tb-size.active { background: var(--accent); }
+    .tb-size-dot   { background: white; border-radius: 50%; }
+    body.drawing-mode * { cursor: crosshair !important; }
+    body.drawing-mode .nav-btn { pointer-events: none; opacity: 0.3; }
+    .tb-label {
+      font-size: 10px; font-weight: 600; letter-spacing: 1px;
+      text-transform: uppercase; color: rgba(255,255,255,0.35); padding: 0 4px;
+    }
+
+    /* upload progress dot */
+    .upload-saving {
+      position: absolute; top: 6px; left: 6px;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent); opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .img-slot.uploading .upload-saving { opacity: 1; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════
+     AUTH OVERLAY
+═══════════════════════════════ -->
+<div id="auth-overlay">
+  <div id="auth-card">
+    <div class="auth-logo">Printing Lounge</div>
+    <div class="title-pill" style="margin-bottom:28px;">Live Review Session</div>
+    <div class="auth-live-title" id="auth-live-title">Laden...</div>
+    <div class="auth-live-sub"  id="auth-live-sub">NQ Intraday</div>
+    <div class="auth-live-date" id="auth-live-date"></div>
+    <div class="auth-rule"></div>
+    <form class="auth-form" id="auth-form">
+      <label class="auth-label">Toegangscode</label>
+      <input type="password" id="auth-input" class="auth-input"
+             placeholder="● ● ● ● ● ● ●" autocomplete="off" autofocus>
+      <div class="auth-error" id="auth-error"></div>
+      <button type="submit" class="auth-btn" id="auth-btn">
+        Toegang <span>→</span>
+      </button>
+    </form>
+    <a href="/" class="auth-back">← Terug naar overzicht</a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     PRESENTATION APP
+═══════════════════════════════ -->
+<div id="app">
+
+  <div id="slides">
+    <!-- Title slide (static, content updated after auth) -->
+    <div class="slide slide-title active" id="slide-0">
+      <div class="title-inner">
+        <div class="title-logo-text">Printing Lounge</div>
+        <div class="title-pill">Live Review Session</div>
+        <h1 class="title-h1" id="live-h1">Beste Trades</h1>
+        <div class="title-rule"></div>
+        <div class="title-meta">
+          <div class="title-date" id="live-date-range"></div>
+          <div class="title-sub"  id="live-sub">NQ Intraday</div>
+        </div>
+      </div>
+      <div class="title-footer-text">@printinglounge &nbsp;·&nbsp; Voor traders, door traders</div>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <button class="nav-btn" id="btn-prev" onclick="navigate(-1)">&#8592;</button>
+  <button class="nav-btn" id="btn-next" onclick="navigate(1)">&#8594;</button>
+  <div id="slide-counter"></div>
+  <div id="kb-hint">&#8592; &#8594; navigeren &nbsp;·&nbsp; D = tekenen &nbsp;·&nbsp; Sleep = pan &nbsp;·&nbsp; R = reset</div>
+  <div id="zoom-ind">100%</div>
+
+  <!-- Mode toggle -->
+  <button id="mode-btn" onclick="toggleMode()">
+    <div class="dot"></div><span id="mode-label">&#9654; Presenteren</span>
+  </button>
+
+  <!-- Drawing canvas -->
+  <canvas id="draw-canvas"></canvas>
+
+  <!-- Draw toolbar -->
+  <div id="draw-toolbar">
+    <span class="tb-label">Tekenen</span>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" id="tb-pen"   title="Pen (D)"  onclick="toggleDraw()">&#9998;</button>
+    <button class="tb-btn" id="tb-erase" title="Gum"      onclick="setTool('erase')">&#9675;</button>
+    <div class="tb-sep"></div>
+    <div class="tb-color active" id="c-red"    style="background:#E74C3C" onclick="setColor('#E74C3C',this)"></div>
+    <div class="tb-color"        id="c-yellow" style="background:#F4D03F" onclick="setColor('#F4D03F',this)"></div>
+    <div class="tb-color"        id="c-white"  style="background:#FFFFFF" onclick="setColor('#FFFFFF',this)"></div>
+    <div class="tb-color"        id="c-cyan"   style="background:#1ABC9C" onclick="setColor('#1ABC9C',this)"></div>
+    <div class="tb-color"        id="c-blue"   style="background:#3498DB" onclick="setColor('#3498DB',this)"></div>
+    <div class="tb-sep"></div>
+    <div class="tb-size active" id="sz-s" onclick="setSize(3,this)">
+      <div class="tb-size-dot" style="width:4px;height:4px"></div>
+    </div>
+    <div class="tb-size" id="sz-m" onclick="setSize(7,this)">
+      <div class="tb-size-dot" style="width:8px;height:8px"></div>
+    </div>
+    <div class="tb-size" id="sz-l" onclick="setSize(14,this)">
+      <div class="tb-size-dot" style="width:14px;height:14px"></div>
+    </div>
+    <div class="tb-sep"></div>
+    <button class="tb-btn danger" title="Wis tekenlaag" onclick="clearSlide()">&#128465;</button>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+/* ════════════════════════════════
+   SLUG + STATE
+════════════════════════════════ */
+const slug = (location.pathname.split('/live/')[1] || '').replace(/\/$/, '');
+
+let JWT   = localStorage.getItem(`pl-jwt-${slug}`) || '';
+let LIVE  = null;
+let DAYS  = [];
+let TOTAL = 1;
+let current = 0;
+
+/* ════════════════════════════════
+   API HELPERS
+════════════════════════════════ */
+function apiFetch(path, opts = {}) {
+  return fetch(path, {
+    ...opts,
+    headers: {
+      'Authorization': `Bearer ${JWT}`,
+      'Content-Type': 'application/json',
+      ...(opts.headers || {})
+    }
+  });
+}
+function apiPost(path, body) {
+  return apiFetch(path, { method: 'POST', body: JSON.stringify(body) });
+}
+
+/* ════════════════════════════════
+   AUTH
+════════════════════════════════ */
+async function initApp() {
+  // Load basic info for overlay (always, regardless of JWT)
+  fetch(`/api/live-info/${slug}`)
+    .then(r => r.ok ? r.json() : null)
+    .then(info => {
+      if (!info) return;
+      document.getElementById('auth-live-title').textContent = info.title || 'Live Review';
+      document.getElementById('auth-live-sub').textContent   = info.subtitle || 'NQ Intraday';
+      document.getElementById('auth-live-date').textContent  = info.date_range || '';
+    })
+    .catch(() => {});
+
+  // Try stored JWT
+  if (JWT) {
+    try {
+      const r = await apiFetch(`/api/live/${slug}`);
+      if (r.ok) {
+        LIVE = await r.json();
+        DAYS = LIVE.days || [];
+        await showApp();
+        return;
+      }
+    } catch {}
+    // JWT invalid — clear and show form
+    JWT = '';
+    localStorage.removeItem(`pl-jwt-${slug}`);
+  }
+
+  // Show auth overlay (already visible by default)
+}
+
+document.getElementById('auth-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const passcode = document.getElementById('auth-input').value.trim();
+  const errEl    = document.getElementById('auth-error');
+  const btn      = document.getElementById('auth-btn');
+  if (!passcode) return;
+  errEl.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Laden...';
+
+  try {
+    const r = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, passcode })
+    });
+    const data = await r.json();
+    if (!r.ok) {
+      errEl.textContent = data.error || 'Verkeerde code';
+      btn.disabled = false;
+      btn.innerHTML = 'Toegang <span>→</span>';
+      return;
+    }
+    JWT  = data.token;
+    LIVE = data.live;
+    DAYS = data.live.days || [];
+    localStorage.setItem(`pl-jwt-${slug}`, JWT);
+    await showApp();
+  } catch {
+    errEl.textContent = 'Verbindingsfout. Probeer opnieuw.';
+    btn.disabled = false;
+    btn.innerHTML = 'Toegang <span>→</span>';
+  }
+});
+
+async function showApp() {
+  // Update title slide content
+  const title = LIVE.title || 'Beste Trades';
+  const parts = title.split('—').map(s => s.trim());
+  document.getElementById('live-h1').textContent         = parts[0] || title;
+  document.getElementById('live-date-range').textContent = LIVE.date_range || '';
+  document.getElementById('live-sub').textContent        = `${(DAYS.length || 10)} handelsdagen · ${LIVE.subtitle || 'NQ Intraday'}`;
+  document.title = `Printing Lounge — ${LIVE.title}`;
+
+  // Build trade slides
+  buildAllSlides();
+
+  // Init presentation
+  TOTAL = DAYS.length + 1;
+  document.body.classList.add('edit-mode');
+  showSlide(0);
+  resizeCanvas();
+
+  // Fade in app, fade out overlay
+  document.getElementById('app').classList.add('visible');
+  const overlay = document.getElementById('auth-overlay');
+  overlay.classList.add('hidden');
+  setTimeout(() => overlay.style.display = 'none', 350);
+
+  // Load saved data
+  await restoreAll();
+}
+
+/* ════════════════════════════════
+   SLIDE BUILDERS
+════════════════════════════════ */
+function imgSlot(i, key, label, style = '') {
+  const id = `s${i}-${key}`, img = `img-s${i}-${key}`;
+  const isTF = key.startsWith('tf');
+  const clickFn = isTF
+    ? `tfClick('${id}','f${i}-${key}',${i},'${key}')`
+    : `openUpload('${id}','f${i}-${key}')`;
+  return `<div class="img-slot${isTF ? ' tf-slot' : ''}" id="${id}" style="${style}" onclick="${clickFn}">
+    <div class="slot-placeholder">
+      <div class="slot-icon">+</div>
+      <div class="slot-text">${label}</div>
+    </div>
+    <img id="${img}" alt="">
+    <div class="upload-saving"></div>
+    <button class="remove-btn" onclick="removeImg(event,'${id}','${img}')">&#x2715;</button>
+  </div>`;
+}
+
+function fileInputs(i) {
+  return ['main', 'tf1', 'tf2', 'tf3'].map(k =>
+    `<input type="file" id="f${i}-${k}" accept="image/*" onchange="loadImg(this,'s${i}-${k}','img-s${i}-${k}')">`
+  ).join('');
+}
+
+function hdr(d, extra = '') {
+  return `<div class="slide-header${d.week === 2 ? ' hdr-w2' : ''}">
+    <span class="hdr-logo">Printing Lounge</span><div class="hdr-sep"></div>
+    <div class="hdr-pill">Dag ${d.num}</div>
+    <div class="hdr-date">${d.label} 2026</div>${extra}
+    <div class="hdr-spacer"></div>
+    <div class="hdr-week-badge">Week ${d.week}</div>
+    <div class="hdr-counter">${d.num} / ${DAYS.length}</div>
+  </div>`;
+}
+
+function ftr() {
+  return `<div class="slide-footer">
+    <span class="ft-brand">@printinglounge</span>
+    <span class="ft-tag">· Voor traders, door traders</span>
+    <div class="ft-spacer"></div>
+    <span class="ft-disc">Niet financieel advies · Educatief doel</span>
+  </div>`;
+}
+
+function lbl(t) { return `<div class="sec-label">${t}</div>`; }
+function notes(i, style = 'flex:1;min-height:0;') {
+  return `<div class="toelichting-card" style="${style}">
+    <textarea class="toelichting-ta" placeholder="Setup, entry, RR, les..."></textarea>
+  </div>`;
+}
+
+function buildSplit(d, i) {
+  return `${hdr(d)}
+  <div class="slide-body">
+    <div class="col-main">${lbl('Beste Trade van de Dag')}${imgSlot(i,'main','Klik om chart te uploaden','flex:1;min-height:0;')}</div>
+    <div class="col-right">
+      <div class="tf-section">${lbl('Extra Timeframes')}<div class="tf-row">
+        ${imgSlot(i,'tf1','TF 1','flex:1;height:100%;')}${imgSlot(i,'tf2','TF 2','flex:1;height:100%;')}${imgSlot(i,'tf3','TF 3','flex:1;height:100%;')}
+      </div></div>
+      <div class="toelichting-wrap">${lbl('Toelichting')}${notes(i)}</div>
+    </div>
+  </div>${ftr()}${fileInputs(i)}`;
+}
+
+function buildStack(d, i) {
+  return `${hdr(d)}
+  <div class="slide-body" style="flex-direction:column;gap:14px;">
+    <div style="flex:0 0 52%;display:flex;flex-direction:column;gap:10px;min-height:0;">
+      ${lbl('Beste Trade van de Dag')}${imgSlot(i,'main','Klik om chart te uploaden','flex:1;min-height:0;')}
+    </div>
+    <div style="flex:1;display:flex;gap:12px;min-height:0;">
+      ${imgSlot(i,'tf1','TF 1','flex:1;')}${imgSlot(i,'tf2','TF 2','flex:1;')}${imgSlot(i,'tf3','TF 3','flex:1;')}
+      <div style="flex:1.7;display:flex;flex-direction:column;gap:8px;min-height:0;">${lbl('Toelichting')}${notes(i,'flex:1;min-height:0;')}</div>
+    </div>
+  </div>${ftr()}${fileInputs(i)}`;
+}
+
+function buildSidebar(d, i) {
+  return `<div style="flex:1;display:flex;min-height:0;overflow:hidden;">
+    <div style="flex:0 0 148px;background:var(--dark);display:flex;flex-direction:column;padding:26px 18px;">
+      <div style="font-size:10.5px;font-weight:700;color:#fff;letter-spacing:2px;text-transform:uppercase;line-height:1.4;">Printing<br>Lounge</div>
+      <div style="width:28px;height:2px;background:var(--accent);border-radius:2px;margin:14px 0;"></div>
+      <div style="font-size:9.5px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.38);margin-bottom:4px;">Week ${d.week}</div>
+      <div style="font-size:52px;font-weight:700;color:#fff;line-height:1;letter-spacing:-2px;">${d.num}</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:7px;">${d.day} · ${d.short}</div>
+      <div style="flex:1;"></div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.22);letter-spacing:0.5px;line-height:1.7;">Dag ${d.num} / ${DAYS.length}<br>@printinglounge</div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;padding:16px 20px 12px;gap:12px;min-height:0;">
+      <div style="flex:1;display:flex;gap:14px;min-height:0;">
+        <div style="flex:0 0 61%;display:flex;flex-direction:column;gap:10px;min-height:0;">${lbl('Beste Trade')}${imgSlot(i,'main','Klik om chart te uploaden','flex:1;min-height:0;')}</div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:10px;min-height:0;">${lbl('Timeframes')}${imgSlot(i,'tf1','TF 1','flex:1;min-height:0;')}${imgSlot(i,'tf2','TF 2','flex:1;min-height:0;')}</div>
+      </div>
+      <div style="flex:0 0 128px;display:flex;flex-direction:column;gap:8px;">${lbl('Toelichting')}${notes(i,'flex:1;')}</div>
+    </div>
+  </div>${ftr()}${fileInputs(i)}`;
+}
+
+function buildReverse(d, i) {
+  return `${hdr(d)}
+  <div class="slide-body">
+    <div class="col-right" style="flex:0 0 34%;">
+      <div class="tf-section">${lbl('Extra Timeframes')}
+        <div style="display:flex;gap:10px;height:150px;">${imgSlot(i,'tf1','TF 1','flex:1;height:100%;')}${imgSlot(i,'tf2','TF 2','flex:1;height:100%;')}</div>
+        <div style="margin-top:10px;height:100px;">${imgSlot(i,'tf3','TF 3','width:100%;height:100%;display:block;')}</div>
+      </div>
+      <div class="toelichting-wrap">${lbl('Toelichting')}${notes(i)}</div>
+    </div>
+    <div class="col-main" style="flex:1;">${lbl('Beste Trade van de Dag')}${imgSlot(i,'main','Klik om chart te uploaden','flex:1;min-height:0;')}</div>
+  </div>${ftr()}${fileInputs(i)}`;
+}
+
+function buildHero(d, i) {
+  const badge = d.num === 5
+    ? `<div style="font-size:9.5px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);padding:0 6px;">Best of W1</div>`
+    : d.num === 10
+    ? `<div style="font-size:9.5px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);padding:0 6px;">Best of W2</div>`
+    : '';
+  return `${hdr(d, badge)}
+  <div class="slide-body">
+    <div class="col-main" style="flex:0 0 68%;">${lbl('Beste Trade van de Dag')}${imgSlot(i,'main','Klik om chart te uploaden','flex:1;min-height:0;')}</div>
+    <div class="col-right">${lbl('Timeframes')}${imgSlot(i,'tf1','TF 1','flex:1;min-height:0;')}${imgSlot(i,'tf2','TF 2','flex:1;min-height:0;')}${lbl('Toelichting')}${notes(i,'flex:1;min-height:0;')}</div>
+  </div>${ftr()}${fileInputs(i)}`;
+}
+
+const BUILDERS = [buildSplit, buildStack, buildSidebar, buildReverse, buildHero];
+
+function buildAllSlides() {
+  const slidesEl = document.getElementById('slides');
+  // Remove any previously built trade slides (keep title slide)
+  slidesEl.querySelectorAll('.slide-trade').forEach(s => s.remove());
+  DAYS.forEach((day, i) => {
+    const s = document.createElement('div');
+    s.className = 'slide slide-trade';
+    s.id = `slide-${i + 1}`;
+    s.innerHTML = BUILDERS[i % 5](day, i);
+    slidesEl.appendChild(s);
+  });
+}
+
+/* ════════════════════════════════
+   NAVIGATION
+════════════════════════════════ */
+const counter = document.getElementById('slide-counter');
+const btnPrev = document.getElementById('btn-prev');
+const btnNext = document.getElementById('btn-next');
+
+function showSlide(idx, dir = 1) {
+  const prev = document.getElementById(`slide-${current}`);
+  const next = document.getElementById(`slide-${idx}`);
+  if (!next) return;
+
+  next.classList.remove('exit-left', 'exit-right');
+  next.style.transform = dir > 0 ? 'translateX(60px)' : 'translateX(-60px)';
+  next.style.opacity   = '0';
+  next.style.transition = 'none';
+
+  if (prev && prev !== next) {
+    prev.classList.remove('active');
+    prev.classList.add(dir > 0 ? 'exit-left' : 'exit-right');
+    setTimeout(() => prev.classList.remove('exit-left', 'exit-right'), 320);
+  }
+
+  requestAnimationFrame(() => {
+    next.style.transition = '';
+    next.style.transform  = '';
+    next.style.opacity    = '';
+    next.classList.add('active');
+  });
+
+  current = idx;
+  btnPrev.disabled = idx === 0;
+  btnNext.disabled = idx === TOTAL - 1;
+  counter.textContent = idx === 0
+    ? `Intro  ·  ${TOTAL - 1} dagen`
+    : `Dag ${idx}  /  ${TOTAL - 1}`;
+}
+
+function navigate(dir) {
+  resetZoom();
+  const next = current + dir;
+  if (next >= 0 && next < TOTAL) showSlide(next, dir);
+}
+
+/* keyboard */
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') navigate(1);
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   navigate(-1);
+});
+
+/* touch swipe */
+let touchStartX = 0, touchStartY = 0;
+document.addEventListener('touchstart', e => {
+  if (drawMode) return;
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+}, { passive: true });
+document.addEventListener('touchend', e => {
+  if (drawMode) return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 45) navigate(dx < 0 ? 1 : -1);
+}, { passive: true });
+
+/* trackpad: horizontal = navigate, vertical = zoom */
+let wNavLock = false;
+document.addEventListener('wheel', e => {
+  const ax = Math.abs(e.deltaX), ay = Math.abs(e.deltaY);
+  if (ax > ay) {
+    if (drawMode || wNavLock) return;
+    if (ax > 40) {
+      navigate(e.deltaX > 0 ? 1 : -1);
+      wNavLock = true;
+      setTimeout(() => { wNavLock = false; }, 550);
+    }
+  } else {
+    if (current === 0 || editMode) return;
+    e.preventDefault();
+    doZoom(e.deltaY > 0 ? 0.93 : 1.07, e.clientX, e.clientY);
+  }
+}, { passive: false });
+
+/* ════════════════════════════════
+   IMAGE HANDLING
+════════════════════════════════ */
+function openUpload(slotId, fileId) {
+  if (!document.getElementById(slotId).classList.contains('has-image'))
+    document.getElementById(fileId).click();
+}
+
+function tfClick(slotId, fileId, slideIdx, key) {
+  const slot = document.getElementById(slotId);
+  if (slot.classList.contains('has-image')) swapWithMain(slideIdx, key);
+  else document.getElementById(fileId).click();
+}
+
+function setSlotImg(slotId, imgId, src) {
+  const slot = document.getElementById(slotId);
+  const img  = document.getElementById(imgId);
+  if (!slot || !img) return;
+  img.src = src;
+  slot.classList.add('has-image');
+}
+
+function loadImg(input, slotId, imgId) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const base64 = e.target.result;
+    setSlotImg(slotId, imgId, base64);
+    localStorage.setItem('pl-' + slotId, base64);
+    input.value = '';
+
+    // Upload to server in background
+    const m = slotId.match(/^s(\d+)-(.+)$/);
+    if (m && JWT) {
+      const slot = document.getElementById(slotId);
+      slot && slot.classList.add('uploading');
+      try {
+        const r = await apiPost('/api/upload', {
+          slide_idx: parseInt(m[1]), slot_key: m[2], base64
+        });
+        if (r.ok) {
+          const { url } = await r.json();
+          document.getElementById(imgId).src = url;
+          localStorage.setItem('pl-' + slotId, url);
+        }
+      } catch (err) {
+        console.warn('Upload mislukt, localStorage fallback', err);
+      } finally {
+        slot && slot.classList.remove('uploading');
+      }
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImg(event, slotId, imgId) {
+  event.stopPropagation();
+  const slot = document.getElementById(slotId);
+  const img  = document.getElementById(imgId);
+  img.src = '';
+  slot.classList.remove('has-image');
+  localStorage.removeItem('pl-' + slotId);
+
+  const m = slotId.match(/^s(\d+)-(.+)$/);
+  if (m && JWT) {
+    apiPost('/api/save', { slide_idx: parseInt(m[1]), slot_key: m[2], value: null }).catch(() => {});
+  }
+}
+
+function swapWithMain(slideIdx, tfKey) {
+  const mainId  = `s${slideIdx}-main`, tfId = `s${slideIdx}-${tfKey}`;
+  const mainImg = document.getElementById(`img-${mainId}`);
+  const tfImg   = document.getElementById(`img-${tfId}`);
+  const mainSlot = document.getElementById(mainId);
+  const tfSlot   = document.getElementById(tfId);
+  if (!mainImg || !tfImg) return;
+
+  const tmpSrc = mainImg.src;
+  const tmpHas = mainSlot.classList.contains('has-image');
+
+  mainImg.src = tfImg.src;
+  tfImg.src   = tmpSrc;
+
+  if (tfSlot.classList.contains('has-image')) mainSlot.classList.add('has-image');
+  else mainSlot.classList.remove('has-image');
+  if (tmpHas) tfSlot.classList.add('has-image');
+  else tfSlot.classList.remove('has-image');
+
+  const mainSaved = localStorage.getItem('pl-' + mainId);
+  const tfSaved   = localStorage.getItem('pl-' + tfId);
+  if (tfSaved)   localStorage.setItem('pl-' + mainId, tfSaved);
+  else           localStorage.removeItem('pl-' + mainId);
+  if (mainSaved) localStorage.setItem('pl-' + tfId, mainSaved);
+  else           localStorage.removeItem('pl-' + tfId);
+
+  if (JWT) {
+    const newMain = document.getElementById(`img-${mainId}`)?.src || null;
+    const newTf   = document.getElementById(`img-${tfId}`)?.src   || null;
+    apiPost('/api/save', { slide_idx: slideIdx, slot_key: 'main', value: newMain || null }).catch(() => {});
+    apiPost('/api/save', { slide_idx: slideIdx, slot_key: tfKey,  value: newTf   || null }).catch(() => {});
+  }
+}
+
+/* drag & drop */
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  const slot = e.target.closest('.img-slot');
+  if (!slot || slot.classList.contains('has-image')) return;
+  const file = [...e.dataTransfer.files].find(f => f.type.startsWith('image/'));
+  if (!file) return;
+  const imgId = 'img-' + slot.id;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    setSlotImg(slot.id, imgId, ev.target.result);
+    localStorage.setItem('pl-' + slot.id, ev.target.result);
+    // Also upload
+    const m = slot.id.match(/^s(\d+)-(.+)$/);
+    if (m && JWT) {
+      apiPost('/api/upload', {
+        slide_idx: parseInt(m[1]), slot_key: m[2], base64: ev.target.result
+      }).then(r => r.ok && r.json()).then(d => {
+        if (d?.url) {
+          document.getElementById(imgId).src = d.url;
+          localStorage.setItem('pl-' + slot.id, d.url);
+        }
+      }).catch(() => {});
+    }
+  };
+  reader.readAsDataURL(file);
+});
+
+/* ════════════════════════════════
+   PERSIST & RESTORE
+════════════════════════════════ */
+const notesTimers = {};
+
+document.getElementById('slides').addEventListener('input', e => {
+  if (!e.target.classList.contains('toelichting-ta')) return;
+  const slide = e.target.closest('.slide');
+  if (!slide) return;
+  const idx  = parseInt(slide.id.replace('slide-', '')) - 1;
+  const text = e.target.value;
+  localStorage.setItem(`pl-notes-${idx}`, text);
+
+  if (JWT) {
+    clearTimeout(notesTimers[idx]);
+    notesTimers[idx] = setTimeout(() => {
+      apiPost('/api/save', { slide_idx: idx, slot_key: 'notes', value: text }).catch(() => {});
+    }, 800);
+  }
+});
+
+async function restoreAll() {
+  // Try API first
+  if (JWT) {
+    try {
+      const r = await apiFetch(`/api/slides/${slug}`);
+      if (r.ok) {
+        const data = await r.json();
+        data.forEach(({ slide_idx, slot_key, value }) => {
+          if (!value) return;
+          if (slot_key === 'notes') {
+            const slide = document.getElementById(`slide-${slide_idx + 1}`);
+            const ta = slide?.querySelector('.toelichting-ta');
+            if (ta) { ta.value = value; localStorage.setItem(`pl-notes-${slide_idx}`, value); }
+          } else {
+            const slotId = `s${slide_idx}-${slot_key}`;
+            setSlotImg(slotId, `img-${slotId}`, value);
+            localStorage.setItem('pl-' + slotId, value);
+          }
+        });
+        return;
+      }
+    } catch (e) {
+      console.warn('API restore mislukt, localStorage fallback', e);
+    }
+  }
+
+  // Fall back to localStorage
+  DAYS.forEach((day, i) => {
+    ['main', 'tf1', 'tf2', 'tf3'].forEach(key => {
+      const src = localStorage.getItem(`pl-s${i}-${key}`);
+      if (src) setSlotImg(`s${i}-${key}`, `img-s${i}-${key}`, src);
+    });
+    const savedNotes = localStorage.getItem(`pl-notes-${i}`);
+    if (savedNotes) {
+      const slide = document.getElementById(`slide-${i + 1}`);
+      const ta = slide?.querySelector('.toelichting-ta');
+      if (ta) ta.value = savedNotes;
+    }
+  });
+}
+
+/* ════════════════════════════════
+   MODE TOGGLE
+════════════════════════════════ */
+let editMode = true;
+
+function toggleMode() {
+  editMode = !editMode;
+  document.body.classList.toggle('edit-mode',    editMode);
+  document.body.classList.toggle('present-mode', !editMode);
+  const btn   = document.getElementById('mode-btn');
+  const label = document.getElementById('mode-label');
+  if (editMode) {
+    btn.classList.remove('live');
+    label.innerHTML = '&#9654; Presenteren';
+    if (drawMode) toggleDraw();
+    resetZoom();
+  } else {
+    btn.classList.add('live');
+    label.innerHTML = '&#9998; Bewerken';
+  }
+}
+
+/* ════════════════════════════════
+   PAN / ZOOM ENGINE
+════════════════════════════════ */
+let zoom = 1, panX = 0, panY = 0;
+let panning = false, panDidMove = false;
+let panAX = 0, panAY = 0, panAPX = 0, panAPY = 0;
+let pinchD0 = 0, pinchZ0 = 1;
+let zoomHideTimer = null;
+
+function getSlideEl() {
+  return current === 0 ? null : document.getElementById(`slide-${current}`);
+}
+
+function applyZoom() {
+  const s = getSlideEl();
+  if (!s) return;
+  s.style.transformOrigin = '0 0';
+  s.style.transform = `translate(${panX}px,${panY}px) scale(${zoom})`;
+  const ind = document.getElementById('zoom-ind');
+  ind.textContent = Math.round(zoom * 100) + '%';
+  ind.classList.add('show');
+  clearTimeout(zoomHideTimer);
+  zoomHideTimer = setTimeout(() => ind.classList.remove('show'), 1200);
+}
+
+function resetZoom() {
+  zoom = 1; panX = 0; panY = 0;
+  const s = getSlideEl();
+  if (s) { s.style.transform = ''; s.style.transformOrigin = ''; }
+  document.getElementById('zoom-ind').classList.remove('show');
+  clearTimeout(zoomHideTimer);
+}
+
+function doZoom(factor, ox, oy) {
+  const cx = (ox - panX) / zoom;
+  const cy = (oy - panY) / zoom;
+  zoom = Math.max(0.2, Math.min(10, zoom * factor));
+  panX = ox - cx * zoom;
+  panY = oy - cy * zoom;
+  applyZoom();
+}
+
+document.addEventListener('mousedown', e => {
+  if (editMode || drawMode || e.button !== 0 || current === 0) return;
+  if (e.target.closest('button, textarea, input, .tf-slot.has-image')) return;
+  panAX = e.clientX; panAY = e.clientY;
+  panAPX = panX;     panAPY = panY;
+  panning = true; panDidMove = false;
+});
+document.addEventListener('mousemove', e => {
+  if (!panning || drawMode) return;
+  const dx = e.clientX - panAX, dy = e.clientY - panAY;
+  if (!panDidMove && Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+  if (!panDidMove) {
+    panDidMove = true;
+    document.body.classList.add('panning-active');
+  }
+  panX = panAPX + dx;
+  panY = panAPY + dy;
+  applyZoom();
+});
+document.addEventListener('mouseup', () => {
+  panning = false;
+  document.body.classList.remove('panning-active');
+});
+document.addEventListener('click', e => {
+  if (!panDidMove) return;
+  e.stopPropagation(); e.preventDefault(); panDidMove = false;
+}, true);
+
+document.addEventListener('keydown', e => {
+  if (e.target.matches('textarea')) return;
+  if ((e.key === 'r' || e.key === 'R') && !drawMode) resetZoom();
+});
+document.addEventListener('dblclick', e => {
+  if (drawMode || e.target.closest('button,textarea,.img-slot')) return;
+  resetZoom();
+});
+
+/* Pinch zoom */
+document.addEventListener('touchstart', e => {
+  if (e.touches.length !== 2) return;
+  pinchD0 = Math.hypot(
+    e.touches[0].clientX - e.touches[1].clientX,
+    e.touches[0].clientY - e.touches[1].clientY
+  );
+  pinchZ0 = zoom;
+}, { passive: true });
+document.addEventListener('touchmove', e => {
+  if (e.touches.length !== 2 || current === 0 || drawMode || editMode) return;
+  e.preventDefault();
+  const d = Math.hypot(
+    e.touches[0].clientX - e.touches[1].clientX,
+    e.touches[0].clientY - e.touches[1].clientY
+  );
+  doZoom((pinchZ0 * d / pinchD0) / zoom,
+    (e.touches[0].clientX + e.touches[1].clientX) / 2,
+    (e.touches[0].clientY + e.touches[1].clientY) / 2);
+}, { passive: false });
+
+/* ════════════════════════════════
+   DRAWING ENGINE
+════════════════════════════════ */
+const canvas = document.getElementById('draw-canvas');
+const ctx    = canvas.getContext('2d');
+
+let drawMode  = false;
+let tool      = 'pen';
+let color     = '#E74C3C';
+let lineWidth = 3;
+let painting  = false;
+let lastX = 0, lastY = 0;
+
+const slideData = {}, history = {};
+const MAX_UNDO  = 30;
+
+function saveHistory() {
+  if (!history[current]) history[current] = [];
+  history[current].push(canvas.toDataURL());
+  if (history[current].length > MAX_UNDO) history[current].shift();
+}
+
+function undo() {
+  const stack = history[current];
+  if (!stack || stack.length === 0) return;
+  const prev = stack.pop();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (prev) {
+    const img = new Image();
+    img.onload = () => { ctx.drawImage(img, 0, 0); slideData[current] = prev; };
+    img.src = prev;
+  } else {
+    delete slideData[current];
+  }
+}
+
+function resizeCanvas() {
+  const saved = slideData[current];
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  ctx.lineCap   = 'round';
+  ctx.lineJoin  = 'round';
+  if (saved) {
+    const img = new Image();
+    img.onload = () => ctx.drawImage(img, 0, 0);
+    img.src = saved;
+  }
+}
+window.addEventListener('resize', resizeCanvas);
+
+function switchCanvas(prevIdx, nextIdx) {
+  if (prevIdx !== null) slideData[prevIdx] = canvas.toDataURL();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const saved = slideData[nextIdx];
+  if (saved) {
+    const img = new Image();
+    img.onload = () => ctx.drawImage(img, 0, 0);
+    img.src = saved;
+  }
+}
+
+/* Patch showSlide to switch canvas */
+const _origShow = showSlide;
+let prevSlide = 0;
+showSlide = function(idx, dir = 1) {
+  switchCanvas(prevSlide, idx);
+  prevSlide = idx;
+  _origShow(idx, dir);
+};
+
+function toggleDraw() {
+  if (editMode) return;
+  drawMode = !drawMode;
+  canvas.classList.toggle('active', drawMode);
+  document.body.classList.toggle('drawing-mode', drawMode);
+  document.getElementById('tb-pen').classList.toggle('active', drawMode);
+  if (drawMode && tool === 'erase') setToolPen();
+}
+
+function setTool(t) {
+  tool = t;
+  document.getElementById('tb-erase').classList.toggle('active', t === 'erase');
+  if (!drawMode) toggleDraw();
+}
+
+function setToolPen() {
+  tool = 'pen';
+  document.getElementById('tb-erase').classList.remove('active');
+}
+
+function setColor(c, el) {
+  color = c;
+  document.querySelectorAll('.tb-color').forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+  if (tool === 'erase') setToolPen();
+  if (!drawMode) toggleDraw();
+}
+
+function setSize(s, el) {
+  lineWidth = s;
+  document.querySelectorAll('.tb-size').forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function clearSlide() {
+  saveHistory();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  delete slideData[current];
+}
+
+function getPos(e) {
+  if (e.touches) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  return { x: e.clientX, y: e.clientY };
+}
+
+function startDraw(e) {
+  if (!drawMode) return;
+  e.preventDefault();
+  saveHistory();
+  painting = true;
+  const pos = getPos(e);
+  lastX = pos.x; lastY = pos.y;
+  ctx.beginPath();
+  ctx.arc(lastX, lastY, lineWidth / 2, 0, Math.PI * 2);
+  applyStyle(); ctx.fill();
+}
+
+function draw(e) {
+  if (!drawMode || !painting) return;
+  e.preventDefault();
+  const pos = getPos(e);
+  applyStyle();
+  ctx.beginPath();
+  ctx.moveTo(lastX, lastY);
+  ctx.lineTo(pos.x, pos.y);
+  ctx.stroke();
+  lastX = pos.x; lastY = pos.y;
+}
+
+function applyStyle() {
+  if (tool === 'erase') {
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.strokeStyle = 'rgba(0,0,0,1)';
+    ctx.fillStyle   = 'rgba(0,0,0,1)';
+    ctx.lineWidth   = lineWidth * 4;
+  } else {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.strokeStyle = color;
+    ctx.fillStyle   = color;
+    ctx.lineWidth   = lineWidth;
+  }
+  ctx.lineCap  = 'round';
+  ctx.lineJoin = 'round';
+}
+
+function stopDraw() { painting = false; }
+
+canvas.addEventListener('mousedown',  startDraw);
+canvas.addEventListener('mousemove',  draw);
+canvas.addEventListener('mouseup',    stopDraw);
+canvas.addEventListener('mouseleave', stopDraw);
+canvas.addEventListener('touchstart', startDraw, { passive: false });
+canvas.addEventListener('touchmove',  draw,      { passive: false });
+canvas.addEventListener('touchend',   stopDraw);
+
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'd' || e.key === 'D') toggleDraw();
+  if (e.key === 'Escape' && drawMode) toggleDraw();
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
+});
+
+/* ════════════════════════════════
+   INIT
+════════════════════════════════ */
+window.addEventListener('load', initApp);
+</script>
+</body>
+</html>

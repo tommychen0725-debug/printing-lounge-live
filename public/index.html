@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Printing Lounge — Live Sessions</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cream:   #EDE8DF;
+      --dark:    #2C1810;
+      --accent:  #7B5233;
+      --white:   #FFFFFF;
+      --muted:   rgba(44,24,16,0.4);
+      --divider: rgba(44,24,16,0.08);
+      --font:    'DM Sans', system-ui, sans-serif;
+    }
+
+    html, body {
+      min-height: 100%;
+      font-family: var(--font);
+      background: var(--cream);
+      color: var(--dark);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── HEADER ── */
+    .site-header {
+      background: var(--dark);
+      height: 68px;
+      display: flex;
+      align-items: center;
+      padding: 0 40px;
+      gap: 14px;
+    }
+    .site-logo { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: 0.3px; }
+    .hdr-sep   { width: 1px; height: 18px; background: rgba(255,255,255,0.18); }
+    .hdr-pill  {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 100px; padding: 4px 13px;
+      font-size: 10px; font-weight: 600; letter-spacing: 1.5px;
+      text-transform: uppercase; color: rgba(255,255,255,0.55);
+    }
+    .hdr-pill::before { content: '●'; color: var(--accent); font-size: 7px; }
+
+    /* ── CONTAINER ── */
+    .container {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 56px 32px 96px;
+    }
+
+    /* ── PAGE HEADING ── */
+    .section-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--white); border: 1px solid rgba(44,24,16,0.12);
+      border-radius: 100px; padding: 5px 14px;
+      font-size: 10.5px; font-weight: 600; letter-spacing: 1.5px;
+      text-transform: uppercase; color: var(--dark); margin-bottom: 18px;
+    }
+    .section-pill::before { content: '●'; color: var(--accent); font-size: 7px; }
+
+    h1.page-title {
+      font-size: clamp(28px, 3.5vw, 44px);
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    .page-sub {
+      font-size: 15px;
+      color: var(--muted);
+      margin-bottom: 48px;
+    }
+
+    /* ── GRID ── */
+    .lives-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    /* ── CARD ── */
+    .live-card {
+      background: var(--white);
+      border-radius: 14px;
+      padding: 30px 28px 24px;
+      border: 1px solid rgba(44,24,16,0.07);
+      box-shadow: 0 2px 8px rgba(44,24,16,0.05);
+      cursor: pointer;
+      transition: box-shadow 0.18s, transform 0.18s;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      text-decoration: none;
+      color: inherit;
+    }
+    .live-card:hover {
+      box-shadow: 0 8px 28px rgba(44,24,16,0.11);
+      transform: translateY(-2px);
+    }
+
+    .card-status {
+      font-size: 9.5px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: rgba(44,24,16,0.35);
+      margin-bottom: 4px;
+    }
+    .card-status.active { color: #1d8c4a; }
+    .card-status.active::before { content: '● '; animation: blink 1.4s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+    .card-title {
+      font-size: 19px;
+      font-weight: 700;
+      line-height: 1.25;
+      margin-bottom: 2px;
+    }
+
+    .card-sub {
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .card-rule {
+      width: 36px; height: 2px;
+      background: rgba(44,24,16,0.08);
+      border-radius: 2px;
+      margin: 10px 0 6px;
+    }
+
+    .card-date { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+
+    .card-cta {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12.5px; font-weight: 600; color: var(--dark);
+      margin-top: auto;
+    }
+    .card-cta-arrow {
+      color: var(--accent);
+      font-size: 18px;
+      transition: transform 0.15s;
+      line-height: 1;
+    }
+    .live-card:hover .card-cta-arrow { transform: translateX(3px); }
+
+    /* ── EMPTY / ERROR ── */
+    .msg {
+      font-size: 15px;
+      color: var(--muted);
+      padding: 12px 0;
+    }
+
+    /* ── SKELETON ── */
+    .skel-card {
+      background: var(--white);
+      border-radius: 14px;
+      padding: 30px 28px;
+      border: 1px solid rgba(44,24,16,0.07);
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .skel {
+      border-radius: 6px;
+      background: linear-gradient(90deg,
+        rgba(44,24,16,0.06) 25%,
+        rgba(44,24,16,0.10) 50%,
+        rgba(44,24,16,0.06) 75%);
+      background-size: 400% 100%;
+      animation: shimmer 1.4s infinite;
+    }
+    @keyframes shimmer { 0%{background-position:100%} 100%{background-position:-100%} }
+
+    /* ── FOOTER ── */
+    .site-footer {
+      border-top: 1px solid var(--divider);
+      padding: 22px 40px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .ft-brand { font-size: 12.5px; font-weight: 700; color: var(--dark); }
+    .ft-tag   { font-size: 12.5px; color: var(--muted); font-style: italic; }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-logo">Printing Lounge</div>
+  <div class="hdr-sep"></div>
+  <div class="hdr-pill">Live Sessions</div>
+</header>
+
+<main class="container">
+  <div class="section-pill">Overzicht</div>
+  <h1 class="page-title">Live Review Sessions</h1>
+  <p class="page-sub">Klik op een sessie om in te loggen en de review te starten.</p>
+
+  <div class="lives-grid" id="lives-grid">
+    <div class="skel-card">
+      <div class="skel" style="height:12px;width:70px;"></div>
+      <div class="skel" style="height:22px;width:240px;"></div>
+      <div class="skel" style="height:12px;width:100px;"></div>
+      <div class="skel" style="height:12px;width:160px;margin-top:4px;"></div>
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <span class="ft-brand">@printinglounge</span>
+  <span class="ft-tag">&nbsp;· Voor traders, door traders</span>
+</footer>
+
+<script>
+async function loadLives() {
+  const grid = document.getElementById('lives-grid');
+  try {
+    const r = await fetch('/api/lives');
+    const lives = await r.json();
+
+    if (!Array.isArray(lives) || lives.length === 0) {
+      grid.innerHTML = '<p class="msg">Nog geen sessies beschikbaar.</p>';
+      return;
+    }
+
+    grid.innerHTML = lives.map(live => `
+      <a class="live-card" href="/live/${escHtml(live.slug)}">
+        <div class="card-status${live.is_active ? ' active' : ''}">${live.is_active ? 'Live' : 'Archief'}</div>
+        <div class="card-title">${escHtml(live.title)}</div>
+        <div class="card-sub">${escHtml(live.subtitle || 'NQ Intraday')}</div>
+        <div class="card-rule"></div>
+        <div class="card-date">${escHtml(live.date_range || '')}</div>
+        <div class="card-cta">Bekijk sessie <span class="card-cta-arrow">→</span></div>
+      </a>
+    `).join('');
+  } catch {
+    grid.innerHTML = '<p class="msg">Fout bij het laden van sessies.</p>';
+  }
+}
+
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+loadLives();
+</script>
+</body>
+</html>
