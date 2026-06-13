@@ -475,9 +475,7 @@
     }
     #zoom-ind.show { opacity: 1; transform: translateY(0); }
 
-    /* space-held cursor */
-    body.panning { cursor: grab !important; }
-    body.panning * { cursor: grab !important; }
+    /* drag-to-pan cursor */
     body.panning-active, body.panning-active * { cursor: grabbing !important; }
 
     /* smooth slide zoom */
@@ -624,7 +622,7 @@
 <button class="nav-btn" id="btn-prev" onclick="navigate(-1)">&#8592;</button>
 <button class="nav-btn" id="btn-next" onclick="navigate(1)">&#8594;</button>
 <div id="slide-counter"></div>
-<div id="kb-hint">&#8592; &#8594; navigeren &nbsp;·&nbsp; D = tekenen &nbsp;·&nbsp; Spatie+sleep = pan &nbsp;·&nbsp; R = reset</div>
+<div id="kb-hint">&#8592; &#8594; navigeren &nbsp;·&nbsp; D = tekenen &nbsp;·&nbsp; Sleep = pan &nbsp;·&nbsp; R = reset</div>
 <div id="zoom-ind">100%</div>
 
 <!-- CANVAS -->
@@ -1061,7 +1059,7 @@ restoreAll();
    PAN / ZOOM ENGINE
 ══════════════════════════════════════ */
 let zoom = 1, panX = 0, panY = 0;
-let spaceDown = false, panning = false;
+let panning = false;
 let panAX = 0, panAY = 0, panAPX = 0, panAPY = 0;
 let pinchD0 = 0, pinchZ0 = 1;
 let zoomHideTimer = null;
@@ -1099,41 +1097,46 @@ function doZoom(factor, ox, oy) {
   applyZoom();
 }
 
-/* Space + drag → pan */
-document.addEventListener('keydown', e => {
-  if (e.target.matches('textarea')) return;
-  if (e.code === 'Space') {
-    spaceDown = true;
-    document.body.classList.add('panning');
-    e.preventDefault();
-  }
-  if ((e.key === 'r' || e.key === 'R') && !drawMode) resetZoom();
-});
-document.addEventListener('keyup', e => {
-  if (e.code === 'Space') {
-    spaceDown = false; panning = false;
-    document.body.classList.remove('panning', 'panning-active');
-  }
-});
+/* Drag to pan — klik + sleep op de slide (niet op knoppen/textarea) */
+let panDidMove = false;
 
 document.addEventListener('mousedown', e => {
-  if (!spaceDown || drawMode || e.button !== 0) return;
-  panning = true;
+  if (drawMode || e.button !== 0 || current === 0) return;
+  if (e.target.closest('button, textarea, input')) return;
   panAX = e.clientX; panAY = e.clientY;
   panAPX = panX;     panAPY = panY;
-  document.body.classList.add('panning-active');
-  e.preventDefault();
+  panning = true;
+  panDidMove = false;
 });
 document.addEventListener('mousemove', e => {
-  if (!panning) return;
-  panX = panAPX + (e.clientX - panAX);
-  panY = panAPY + (e.clientY - panAY);
+  if (!panning || drawMode) return;
+  const dx = e.clientX - panAX, dy = e.clientY - panAY;
+  if (!panDidMove && Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+  if (!panDidMove) {
+    panDidMove = true;
+    document.body.classList.add('panning-active');
+  }
+  panX = panAPX + dx;
+  panY = panAPY + dy;
   applyZoom();
 });
 document.addEventListener('mouseup', () => {
-  if (!panning) return;
   panning = false;
   document.body.classList.remove('panning-active');
+});
+
+/* Blokkeer click-event als we net hebben gesleept */
+document.addEventListener('click', e => {
+  if (!panDidMove) return;
+  e.stopPropagation();
+  e.preventDefault();
+  panDidMove = false;
+}, true);
+
+/* R key → reset zoom */
+document.addEventListener('keydown', e => {
+  if (e.target.matches('textarea')) return;
+  if ((e.key === 'r' || e.key === 'R') && !drawMode) resetZoom();
 });
 
 /* Double-click → reset view */
