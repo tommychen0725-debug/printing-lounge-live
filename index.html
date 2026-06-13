@@ -478,6 +478,42 @@
     /* drag-to-pan cursor */
     body.panning-active, body.panning-active * { cursor: grabbing !important; }
 
+    /* ── MODE BUTTON ── */
+    #mode-btn {
+      position: fixed;
+      top: 14px; right: 14px;
+      z-index: 600;
+      background: var(--dark);
+      color: #fff;
+      border: none;
+      border-radius: 100px;
+      padding: 9px 20px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--font);
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: background 0.15s, transform 0.1s;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+    }
+    #mode-btn:hover { background: #3d2418; transform: scale(1.03); }
+    #mode-btn.live { background: #219a52; }
+    #mode-btn.live:hover { background: #1a7d43; }
+    #mode-btn .dot { width: 7px; height: 7px; border-radius: 50%; background: #fff; flex-shrink: 0; }
+    #mode-btn.live .dot { background: #ff4444; animation: blink 1.4s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ── EDIT MODE: slots & textareas interactive, pan/zoom/draw off ── */
+    body.edit-mode #draw-toolbar { display: none !important; }
+    body.edit-mode #zoom-ind     { display: none !important; }
+
+    /* ── PRESENT MODE: slots & textareas locked ── */
+    body.present-mode .img-slot  { pointer-events: none !important; cursor: default !important; }
+    body.present-mode textarea   { pointer-events: none !important; cursor: default !important; user-select: none; }
+
     /* smooth slide zoom */
     .slide-trade { will-change: transform; }
 
@@ -624,6 +660,9 @@
 <div id="slide-counter"></div>
 <div id="kb-hint">&#8592; &#8594; navigeren &nbsp;·&nbsp; D = tekenen &nbsp;·&nbsp; Sleep = pan &nbsp;·&nbsp; R = reset</div>
 <div id="zoom-ind">100%</div>
+<button id="mode-btn" onclick="toggleMode()">
+  <div class="dot"></div><span id="mode-label">&#9654; Presenteren</span>
+</button>
 
 <!-- CANVAS -->
 <canvas id="draw-canvas"></canvas>
@@ -940,7 +979,7 @@ document.addEventListener('wheel', e => {
       setTimeout(() => { wNavLock = false; }, 550);
     }
   } else {
-    if (current === 0) return;
+    if (current === 0 || editMode) return;
     e.preventDefault();
     doZoom(e.deltaY > 0 ? 0.93 : 1.07, e.clientX, e.clientY);
   }
@@ -1058,6 +1097,26 @@ restoreAll();
 /* ══════════════════════════════════════
    PAN / ZOOM ENGINE
 ══════════════════════════════════════ */
+/* ── MODE ── */
+let editMode = true; // start in edit mode
+
+function toggleMode() {
+  editMode = !editMode;
+  document.body.classList.toggle('edit-mode',   editMode);
+  document.body.classList.toggle('present-mode', !editMode);
+  const btn   = document.getElementById('mode-btn');
+  const label = document.getElementById('mode-label');
+  if (editMode) {
+    btn.classList.remove('live');
+    label.innerHTML = '&#9654; Presenteren';
+    if (drawMode) toggleDraw();
+    resetZoom();
+  } else {
+    btn.classList.add('live');
+    label.innerHTML = '&#9998; Bewerken';
+  }
+}
+
 let zoom = 1, panX = 0, panY = 0;
 let panning = false;
 let panAX = 0, panAY = 0, panAPX = 0, panAPY = 0;
@@ -1101,7 +1160,7 @@ function doZoom(factor, ox, oy) {
 let panDidMove = false;
 
 document.addEventListener('mousedown', e => {
-  if (drawMode || e.button !== 0 || current === 0) return;
+  if (editMode || drawMode || e.button !== 0 || current === 0) return;
   if (e.target.closest('button, textarea, input')) return;
   panAX = e.clientX; panAY = e.clientY;
   panAPX = panX;     panAPY = panY;
@@ -1156,7 +1215,7 @@ document.addEventListener('touchstart', e => {
 }, { passive: true });
 
 document.addEventListener('touchmove', e => {
-  if (e.touches.length !== 2 || current === 0 || drawMode) return;
+  if (e.touches.length !== 2 || current === 0 || drawMode || editMode) return;
   e.preventDefault();
   const d = Math.hypot(
     e.touches[0].clientX - e.touches[1].clientX,
@@ -1168,6 +1227,7 @@ document.addEventListener('touchmove', e => {
 }, { passive: false });
 
 /* ── INIT ── */
+document.body.classList.add('edit-mode');
 showSlide(0);
 
 /* ══════════════════════════════════════
@@ -1251,6 +1311,7 @@ showSlide = function(idx, dir = 1) {
 
 /* ── TOOLBAR CONTROLS ── */
 function toggleDraw() {
+  if (editMode) return;
   drawMode = !drawMode;
   canvas.classList.toggle('active', drawMode);
   document.body.classList.toggle('drawing-mode', drawMode);
