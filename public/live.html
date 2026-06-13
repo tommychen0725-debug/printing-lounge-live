@@ -916,7 +916,7 @@ function buildAllSlides() {
     const s = document.createElement('div');
     s.className = 'slide slide-trade';
     s.id = `slide-${i + 1}`;
-    s.innerHTML = BUILDERS[i % 5](day, i);
+    s.innerHTML = buildSplit(day, i);
     slidesEl.appendChild(s);
   });
 }
