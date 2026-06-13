@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Printing Lounge — Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --cream:   #EDE8DF;
+      --dark:    #2C1810;
+      --accent:  #7B5233;
+      --white:   #FFFFFF;
+      --muted:   rgba(44,24,16,0.4);
+      --divider: rgba(44,24,16,0.08);
+      --font:    'DM Sans', system-ui, sans-serif;
+      --green:   #1d8c4a;
+      --red:     #c0392b;
+    }
+    html, body { min-height: 100%; font-family: var(--font); background: var(--cream); color: var(--dark); -webkit-font-smoothing: antialiased; }
+
+    /* ── HEADER ── */
+    .site-header {
+      background: var(--dark); height: 68px;
+      display: flex; align-items: center; padding: 0 32px; gap: 14px; position: sticky; top: 0; z-index: 100;
+    }
+    .site-logo { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: 0.3px; }
+    .hdr-sep   { width: 1px; height: 18px; background: rgba(255,255,255,0.18); }
+    .hdr-badge {
+      font-size: 10px; font-weight: 600; letter-spacing: 1.5px;
+      text-transform: uppercase; color: rgba(255,255,255,0.5);
+      background: rgba(255,255,255,0.08); border-radius: 100px; padding: 4px 12px;
+    }
+    .hdr-badge::before { content: '●  '; color: var(--accent); font-size: 7px; }
+    .hdr-spacer { flex: 1; }
+    .hdr-btn {
+      font-family: var(--font); font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.6);
+      background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 8px; transition: background 0.15s, color 0.15s;
+    }
+    .hdr-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+    .hdr-user { font-size: 12px; color: rgba(255,255,255,0.4); }
+
+    /* ── LOGIN PAGE ── */
+    #login-page {
+      min-height: calc(100vh - 68px);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-card {
+      background: var(--white); border-radius: 16px; padding: 40px 36px;
+      border: 1px solid rgba(44,24,16,0.08); box-shadow: 0 4px 20px rgba(44,24,16,0.08);
+      width: 100%; max-width: 380px;
+    }
+    .login-eyebrow {
+      font-size: 10px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+    }
+    .login-eyebrow::before { content: '●'; font-size: 7px; }
+    .login-title { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+    .login-sub   { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+    .login-rule  { width: 36px; height: 2px; background: var(--accent); border-radius: 2px; margin-bottom: 28px; }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .form-label { font-size: 10.5px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+    .form-input {
+      width: 100%; background: var(--cream); border: 1.5px solid rgba(44,24,16,0.15);
+      border-radius: 10px; padding: 12px 14px;
+      font-family: var(--font); font-size: 14px; color: var(--dark); outline: none;
+      transition: border-color 0.18s;
+    }
+    .form-input:focus { border-color: var(--accent); background: #fff; }
+    .form-input::placeholder { color: var(--muted); }
+    .form-error { font-size: 12px; color: var(--red); min-height: 18px; }
+
+    .btn-primary {
+      width: 100%; background: var(--dark); color: #fff;
+      border: none; border-radius: 10px; padding: 13px;
+      font-family: var(--font); font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: background 0.15s; margin-top: 6px;
+    }
+    .btn-primary:hover { background: #3d2418; }
+    .btn-primary:disabled { opacity: 0.5; cursor: default; }
+
+    /* ── DASHBOARD ── */
+    #dashboard { display: none; }
+    .container  { max-width: 1100px; margin: 0 auto; padding: 44px 28px 80px; }
+
+    /* Tabs */
+    .tabs {
+      display: flex; gap: 4px;
+      background: rgba(44,24,16,0.06); border-radius: 10px; padding: 4px;
+      width: fit-content; margin-bottom: 36px;
+    }
+    .tab {
+      font-family: var(--font); font-size: 13px; font-weight: 600; color: var(--muted);
+      background: none; border: none; border-radius: 7px; padding: 8px 18px;
+      cursor: pointer; transition: background 0.15s, color 0.15s;
+    }
+    .tab.active { background: var(--white); color: var(--dark); box-shadow: 0 1px 4px rgba(44,24,16,0.08); }
+
+    /* Section header */
+    .sec-head { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+    .sec-title { font-size: 22px; font-weight: 700; }
+    .sec-spacer { flex: 1; }
+
+    .btn-create {
+      background: var(--dark); color: #fff;
+      border: none; border-radius: 100px; padding: 10px 20px;
+      font-family: var(--font); font-size: 12.5px; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; gap: 6px;
+      transition: background 0.15s;
+    }
+    .btn-create:hover { background: #3d2418; }
+    .btn-create .plus { font-size: 16px; font-weight: 300; }
+
+    /* Live cards grid */
+    .lives-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+
+    .live-card {
+      background: var(--white); border-radius: 14px; padding: 22px 22px 18px;
+      border: 1px solid rgba(44,24,16,0.07); box-shadow: 0 2px 8px rgba(44,24,16,0.04);
+      display: flex; flex-direction: column; gap: 0;
+    }
+    .card-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
+    .card-info { flex: 1; min-width: 0; }
+    .card-status-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 6px;
+      background: var(--green);
+    }
+    .card-status-dot.inactive { background: rgba(44,24,16,0.2); }
+    .card-live-title { font-size: 16px; font-weight: 700; line-height: 1.3; margin-bottom: 3px; }
+    .card-live-sub   { font-size: 11.5px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: var(--accent); margin-bottom: 2px; }
+    .card-live-date  { font-size: 12px; color: var(--muted); }
+
+    .card-stats {
+      display: flex; gap: 16px; margin-bottom: 16px;
+      padding: 12px 14px; background: var(--cream); border-radius: 10px;
+    }
+    .stat { display: flex; flex-direction: column; gap: 2px; }
+    .stat-val  { font-size: 20px; font-weight: 700; line-height: 1; }
+    .stat-label{ font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+
+    .card-code {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 16px;
+      padding: 9px 12px; background: var(--cream); border-radius: 8px;
+    }
+    .code-label { font-size: 10.5px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+    .code-val   { font-size: 14px; font-weight: 700; letter-spacing: 2px; flex: 1; }
+    .code-copy  {
+      font-family: var(--font); font-size: 11px; font-weight: 600; color: var(--accent);
+      background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 6px;
+      transition: background 0.15s;
+    }
+    .code-copy:hover { background: rgba(123,82,51,0.1); }
+
+    .card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn-sm {
+      font-family: var(--font); font-size: 11.5px; font-weight: 600;
+      border: 1.5px solid var(--divider); border-radius: 8px; padding: 7px 14px;
+      cursor: pointer; background: var(--white); color: var(--dark);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn-sm:hover { border-color: var(--dark); background: var(--cream); }
+    .btn-sm.accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-sm.accent:hover { background: #6a4529; }
+    .btn-sm.danger { color: var(--red); border-color: rgba(192,57,43,0.3); }
+    .btn-sm.danger:hover { background: rgba(192,57,43,0.06); border-color: var(--red); }
+
+    /* Access log */
+    .log-filter { margin-bottom: 18px; }
+    .log-table  { width: 100%; border-collapse: collapse; }
+    .log-table th {
+      text-align: left; font-size: 10px; font-weight: 600; letter-spacing: 1.5px;
+      text-transform: uppercase; color: var(--muted); padding: 10px 14px;
+      border-bottom: 1px solid var(--divider);
+    }
+    .log-table td { padding: 11px 14px; font-size: 13.5px; border-bottom: 1px solid var(--divider); }
+    .log-table tr:last-child td { border-bottom: none; }
+    .log-table tr:hover td { background: rgba(44,24,16,0.02); }
+    .log-card {
+      background: var(--white); border-radius: 14px;
+      border: 1px solid rgba(44,24,16,0.07); overflow: hidden;
+    }
+    .log-name   { font-weight: 600; }
+    .log-live   { font-size: 12px; color: var(--accent); font-weight: 600; }
+    .log-time   { font-size: 12.5px; color: var(--muted); }
+    .log-empty  { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(44,24,16,0.45);
+      display: flex; align-items: center; justify-content: center; z-index: 500;
+      backdrop-filter: blur(4px);
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal {
+      background: var(--white); border-radius: 16px; padding: 32px 28px;
+      width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto;
+      box-shadow: 0 12px 48px rgba(44,24,16,0.2);
+    }
+    .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+    .modal-sub   { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+    .modal-rule  { width: 36px; height: 2px; background: var(--accent); border-radius: 2px; margin-bottom: 24px; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+    .btn-cancel {
+      font-family: var(--font); font-size: 13px; font-weight: 600;
+      background: none; border: none; color: var(--muted); cursor: pointer; padding: 10px 16px;
+    }
+    .btn-cancel:hover { color: var(--dark); }
+    .modal-error { font-size: 12px; color: var(--red); margin-top: 8px; min-height: 18px; }
+
+    /* hint row */
+    .form-hint { font-size: 11px; color: var(--muted); margin-top: -8px; margin-bottom: 8px; }
+
+    .select-input {
+      width: 100%; background: var(--cream); border: 1.5px solid rgba(44,24,16,0.15);
+      border-radius: 10px; padding: 12px 14px;
+      font-family: var(--font); font-size: 14px; color: var(--dark); outline: none;
+      transition: border-color 0.18s; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%237B5233' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 14px center;
+    }
+    .select-input:focus { border-color: var(--accent); background-color: #fff; }
+
+    .toggle-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 0; border-bottom: 1px solid var(--divider);
+    }
+    .toggle-label { font-size: 14px; font-weight: 500; }
+    .toggle-sub   { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .toggle {
+      position: relative; width: 44px; height: 24px;
+      background: rgba(44,24,16,0.15); border-radius: 100px;
+      cursor: pointer; transition: background 0.2s; flex-shrink: 0;
+    }
+    .toggle.on { background: var(--green); }
+    .toggle::after {
+      content: ''; position: absolute; top: 3px; left: 3px;
+      width: 18px; height: 18px; background: #fff; border-radius: 50%;
+      transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+    .toggle.on::after { transform: translateX(20px); }
+
+    /* skeleton */
+    .skel { border-radius: 6px; background: linear-gradient(90deg, rgba(44,24,16,0.06) 25%, rgba(44,24,16,0.10) 50%, rgba(44,24,16,0.06) 75%); background-size: 400% 100%; animation: shimmer 1.4s infinite; }
+    @keyframes shimmer { 0%{background-position:100%} 100%{background-position:-100%} }
+  </style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="site-logo">Printing Lounge</div>
+  <div class="hdr-sep"></div>
+  <div class="hdr-badge">Admin Panel</div>
+  <div class="hdr-spacer"></div>
+  <span class="hdr-user" id="hdr-user"></span>
+  <a href="/" class="hdr-btn">← Dashboard</a>
+  <button class="hdr-btn" id="btn-logout" onclick="logout()" style="display:none">Uitloggen</button>
+</header>
+
+<!-- ════ LOGIN ════ -->
+<div id="login-page">
+  <div class="login-card">
+    <div class="login-eyebrow">Admin Login</div>
+    <h2 class="login-title">Welkom terug</h2>
+    <p class="login-sub">Log in om lives te beheren en statistieken te bekijken.</p>
+    <div class="login-rule"></div>
+    <form id="login-form">
+      <div class="form-group">
+        <label class="form-label">Gebruikersnaam</label>
+        <input type="text" id="login-user" class="form-input" placeholder="admin" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Wachtwoord</label>
+        <input type="password" id="login-pass" class="form-input" placeholder="●●●●●●●●" autocomplete="current-password">
+      </div>
+      <div class="form-error" id="login-error"></div>
+      <button type="submit" class="btn-primary" id="login-btn">Inloggen →</button>
+    </form>
+  </div>
+</div>
+
+<!-- ════ DASHBOARD ════ -->
+<div id="dashboard">
+  <div class="container">
+
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('lives')">Live Sessions</button>
+      <button class="tab"        onclick="showTab('log')">Toegangslog</button>
+    </div>
+
+    <!-- Lives tab -->
+    <div id="tab-lives">
+      <div class="sec-head">
+        <h2 class="sec-title">Live Sessions</h2>
+        <div class="sec-spacer"></div>
+        <button class="btn-create" onclick="openCreateModal()">
+          <span class="plus">+</span> Nieuwe Live
+        </button>
+      </div>
+      <div class="lives-grid" id="lives-grid">
+        <div class="live-card" style="gap:14px;">
+          <div class="skel" style="height:16px;width:60%;"></div>
+          <div class="skel" style="height:13px;width:40%;"></div>
+          <div class="skel" style="height:56px;border-radius:10px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Log tab -->
+    <div id="tab-log" style="display:none;">
+      <div class="sec-head">
+        <h2 class="sec-title">Toegangslog</h2>
+        <div class="sec-spacer"></div>
+        <select class="select-input" id="log-filter" onchange="loadLog()" style="width:220px;">
+          <option value="">Alle sessies</option>
+        </select>
+      </div>
+      <div class="log-card">
+        <table class="log-table" id="log-table">
+          <thead>
+            <tr>
+              <th>Naam</th>
+              <th>Live Sessie</th>
+              <th>Datum &amp; Tijd</th>
+            </tr>
+          </thead>
+          <tbody id="log-body">
+            <tr><td colspan="3" class="log-empty">Laden...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ CREATE MODAL ════ -->
+<div class="modal-overlay hidden" id="create-modal">
+  <div class="modal">
+    <div class="modal-title">Nieuwe Live Aanmaken</div>
+    <div class="modal-sub">Vul de details in. Handelsdagen worden automatisch gegenereerd.</div>
+    <div class="modal-rule"></div>
+
+    <div class="form-group">
+      <label class="form-label">Titel *</label>
+      <input type="text" id="c-title" class="form-input" placeholder="Beste Trades — Week X">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Ondertitel</label>
+      <input type="text" id="c-subtitle" class="form-input" placeholder="NQ Intraday" value="NQ Intraday">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Startdatum (maandag van week 1) *</label>
+      <input type="date" id="c-start" class="form-input">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Aantal weken *</label>
+      <select id="c-weeks" class="select-input">
+        <option value="1">1 week (5 dagen)</option>
+        <option value="2" selected>2 weken (10 dagen)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Toegangscode *</label>
+      <input type="text" id="c-code" class="form-input" placeholder="PL2026" autocomplete="off" style="letter-spacing:2px;">
+    </div>
+    <div class="modal-error" id="create-error"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeCreateModal()">Annuleren</button>
+      <button class="btn-primary" style="width:auto;padding:11px 24px;" id="create-btn" onclick="createLive()">Aanmaken →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ EDIT MODAL ════ -->
+<div class="modal-overlay hidden" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">Live Bewerken</div>
+    <div class="modal-sub" id="edit-slug" style="font-size:11.5px;color:var(--muted);font-family:monospace;"></div>
+    <div class="modal-rule"></div>
+
+    <input type="hidden" id="e-id">
+    <div class="form-group">
+      <label class="form-label">Titel</label>
+      <input type="text" id="e-title" class="form-input">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Ondertitel</label>
+      <input type="text" id="e-subtitle" class="form-input">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Datum range (zichtbaar in presentatie)</label>
+      <input type="text" id="e-daterange" class="form-input" placeholder="1 Juni — 12 Juni 2026">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Toegangscode</label>
+      <input type="text" id="e-code" class="form-input" style="letter-spacing:2px;" autocomplete="off">
+    </div>
+    <div class="toggle-row" style="margin-top:6px;">
+      <div>
+        <div class="toggle-label">Sessie actief</div>
+        <div class="toggle-sub">Gasten kunnen alleen inloggen als de sessie actief is</div>
+      </div>
+      <div class="toggle" id="e-active-toggle" onclick="toggleActive()"></div>
+    </div>
+
+    <div class="modal-error" id="edit-error"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeEditModal()">Annuleren</button>
+      <button class="btn-primary" style="width:auto;padding:11px 24px;" onclick="saveLive()">Opslaan →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════
+   AUTH
+═══════════════════════════════════ */
+let adminJWT = localStorage.getItem('pl-admin-jwt') || '';
+let allLives = [];
+
+function decodeJWT(token) {
+  try { return JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))); } catch { return null; }
+}
+
+function apiFetch(path, opts = {}) {
+  return fetch(path, {
+    ...opts,
+    headers: { 'Authorization': `Bearer ${adminJWT}`, 'Content-Type': 'application/json', ...(opts.headers || {}) }
+  });
+}
+
+async function initAdmin() {
+  if (adminJWT) {
+    const decoded = decodeJWT(adminJWT);
+    if (decoded?.exp > Date.now() / 1000 && decoded.role === 'admin') {
+      showDashboard();
+      return;
+    }
+    adminJWT = '';
+    localStorage.removeItem('pl-admin-jwt');
+  }
+  showLoginPage();
+}
+
+function showLoginPage() {
+  document.getElementById('login-page').style.display = '';
+  document.getElementById('dashboard').style.display  = 'none';
+  document.getElementById('btn-logout').style.display = 'none';
+  document.getElementById('hdr-user').textContent = '';
+}
+
+async function showDashboard() {
+  document.getElementById('login-page').style.display = 'none';
+  document.getElementById('dashboard').style.display  = '';
+  document.getElementById('btn-logout').style.display = '';
+  document.getElementById('hdr-user').textContent = 'Ingelogd als admin';
+  loadLives();
+  prefillStartDate();
+}
+
+function logout() {
+  adminJWT = '';
+  localStorage.removeItem('pl-admin-jwt');
+  showLoginPage();
+}
+
+/* Login form */
+document.getElementById('login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const username = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pass').value;
+  const errEl    = document.getElementById('login-error');
+  const btn      = document.getElementById('login-btn');
+  errEl.textContent = '';
+  btn.disabled = true; btn.textContent = 'Laden...';
+
+  try {
+    const r = await fetch('/api/admin/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      errEl.textContent = d.error || 'Onbekende fout';
+      btn.disabled = false; btn.textContent = 'Inloggen →';
+      return;
+    }
+    adminJWT = d.token;
+    localStorage.setItem('pl-admin-jwt', adminJWT);
+    showDashboard();
+  } catch {
+    errEl.textContent = 'Verbindingsfout. Probeer opnieuw.';
+    btn.disabled = false; btn.textContent = 'Inloggen →';
+  }
+});
+
+/* ═══════════════════════════════════
+   TABS
+═══════════════════════════════════ */
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-lives').style.display = name === 'lives' ? '' : 'none';
+  document.getElementById('tab-log').style.display   = name === 'log'   ? '' : 'none';
+  if (name === 'log') loadLog();
+}
+
+/* ═══════════════════════════════════
+   LIVES
+═══════════════════════════════════ */
+async function loadLives() {
+  const grid = document.getElementById('lives-grid');
+  try {
+    const r = await apiFetch('/api/admin/lives');
+    if (!r.ok) { grid.innerHTML = '<p style="color:var(--red);padding:12px;">Fout bij laden.</p>'; return; }
+    allLives = await r.json();
+    renderLives();
+    renderLogFilter();
+  } catch {
+    grid.innerHTML = '<p style="color:var(--red);padding:12px;">Verbindingsfout.</p>';
+  }
+}
+
+function renderLives() {
+  const grid = document.getElementById('lives-grid');
+  if (!allLives.length) {
+    grid.innerHTML = '<p style="color:var(--muted);padding:12px;">Nog geen sessies aangemaakt.</p>';
+    return;
+  }
+  grid.innerHTML = allLives.map(live => `
+    <div class="live-card">
+      <div class="card-top">
+        <div class="card-info">
+          <div class="card-live-title">${esc(live.title)}</div>
+          <div class="card-live-sub">${esc(live.subtitle || 'NQ Intraday')}</div>
+          <div class="card-live-date">${esc(live.date_range || '')}</div>
+        </div>
+        <div class="card-status-dot${live.is_active ? '' : ' inactive'}" title="${live.is_active ? 'Actief' : 'Inactief'}"></div>
+      </div>
+
+      <div class="card-stats">
+        <div class="stat">
+          <div class="stat-val">${live.visitor_count}</div>
+          <div class="stat-label">Bezoekers</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val">${live.is_active ? '●' : '—'}</div>
+          <div class="stat-label">${live.is_active ? 'Actief' : 'Archief'}</div>
+        </div>
+      </div>
+
+      <div class="card-code">
+        <span class="code-label">Code</span>
+        <span class="code-val" id="code-${live.id}">••••••</span>
+        <button class="code-copy" onclick="toggleCode(${live.id}, '${esc(live.passcode)}')">Toon</button>
+        <button class="code-copy" onclick="copyCode('${esc(live.passcode)}')">Kopieer</button>
+      </div>
+
+      <div class="card-actions">
+        <a href="/live/${esc(live.slug)}" target="_blank" class="btn-sm accent">Openen ↗</a>
+        <button class="btn-sm" onclick="openEditModal(${live.id})">Bewerken</button>
+        <button class="btn-sm" onclick="showTab('log'); filterLog(${live.id})">Log</button>
+        <button class="btn-sm danger" onclick="archiveLive(${live.id}, ${!live.is_active})">${live.is_active ? 'Archiveren' : 'Activeren'}</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleCode(id, passcode) {
+  const el = document.getElementById(`code-${id}`);
+  if (el.textContent === passcode) {
+    el.textContent = '••••••';
+    el.previousElementSibling.previousElementSibling.textContent = 'Code';
+    el.nextElementSibling.textContent = 'Toon';
+  } else {
+    el.textContent = passcode;
+    el.nextElementSibling.textContent = 'Verberg';
+  }
+}
+
+function copyCode(code) {
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = event.target;
+    btn.textContent = 'Gekopieerd!';
+    setTimeout(() => btn.textContent = 'Kopieer', 1500);
+  });
+}
+
+async function archiveLive(id, makeActive) {
+  const r = await apiFetch(`/api/admin/lives/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ is_active: makeActive })
+  });
+  if (r.ok) loadLives();
+}
+
+/* ═══════════════════════════════════
+   CREATE MODAL
+═══════════════════════════════════ */
+function openCreateModal() {
+  document.getElementById('create-modal').classList.remove('hidden');
+  document.getElementById('create-error').textContent = '';
+}
+function closeCreateModal() {
+  document.getElementById('create-modal').classList.add('hidden');
+}
+
+function prefillStartDate() {
+  const today = new Date();
+  const dow   = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + (dow === 0 ? 1 : dow === 1 ? 0 : 8 - dow));
+  document.getElementById('c-start').value = monday.toISOString().slice(0, 10);
+}
+
+async function createLive() {
+  const title     = document.getElementById('c-title').value.trim();
+  const subtitle  = document.getElementById('c-subtitle').value.trim();
+  const start     = document.getElementById('c-start').value;
+  const weeks     = document.getElementById('c-weeks').value;
+  const passcode  = document.getElementById('c-code').value.trim();
+  const errEl     = document.getElementById('create-error');
+  const btn       = document.getElementById('create-btn');
+  errEl.textContent = '';
+
+  if (!title || !start || !passcode) {
+    errEl.textContent = 'Vul alle verplichte velden in.';
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = 'Aanmaken...';
+
+  try {
+    const r = await apiFetch('/api/admin/lives', {
+      method: 'POST',
+      body: JSON.stringify({ title, subtitle, start_date: start, num_weeks: weeks, passcode })
+    });
+    const d = await r.json();
+    if (!r.ok) { errEl.textContent = d.error || 'Fout'; btn.disabled = false; btn.textContent = 'Aanmaken →'; return; }
+    closeCreateModal();
+    loadLives();
+    // Reset form
+    document.getElementById('c-title').value = '';
+    document.getElementById('c-code').value  = '';
+    document.getElementById('c-subtitle').value = 'NQ Intraday';
+  } catch {
+    errEl.textContent = 'Verbindingsfout.';
+  }
+  btn.disabled = false; btn.textContent = 'Aanmaken →';
+}
+
+/* ═══════════════════════════════════
+   EDIT MODAL
+═══════════════════════════════════ */
+let editActiveState = true;
+
+function openEditModal(id) {
+  const live = allLives.find(l => l.id === id);
+  if (!live) return;
+  document.getElementById('e-id').value        = live.id;
+  document.getElementById('e-title').value     = live.title;
+  document.getElementById('e-subtitle').value  = live.subtitle || '';
+  document.getElementById('e-daterange').value = live.date_range || '';
+  document.getElementById('e-code').value      = live.passcode;
+  document.getElementById('edit-slug').textContent = `/live/${live.slug}`;
+  editActiveState = live.is_active;
+  const tog = document.getElementById('e-active-toggle');
+  tog.classList.toggle('on', live.is_active);
+  document.getElementById('edit-error').textContent = '';
+  document.getElementById('edit-modal').classList.remove('hidden');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.add('hidden');
+}
+
+function toggleActive() {
+  editActiveState = !editActiveState;
+  document.getElementById('e-active-toggle').classList.toggle('on', editActiveState);
+}
+
+async function saveLive() {
+  const id        = document.getElementById('e-id').value;
+  const title     = document.getElementById('e-title').value.trim();
+  const subtitle  = document.getElementById('e-subtitle').value.trim();
+  const daterange = document.getElementById('e-daterange').value.trim();
+  const passcode  = document.getElementById('e-code').value.trim();
+  const errEl     = document.getElementById('edit-error');
+  errEl.textContent = '';
+
+  if (!title || !passcode) { errEl.textContent = 'Titel en code zijn verplicht.'; return; }
+
+  const r = await apiFetch(`/api/admin/lives/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ title, subtitle, date_range: daterange, passcode, is_active: editActiveState })
+  });
+  const d = await r.json();
+  if (!r.ok) { errEl.textContent = d.error || 'Fout bij opslaan.'; return; }
+  closeEditModal();
+  loadLives();
+}
+
+/* ═══════════════════════════════════
+   ACCESS LOG
+═══════════════════════════════════ */
+function renderLogFilter() {
+  const sel = document.getElementById('log-filter');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Alle sessies</option>' +
+    allLives.map(l => `<option value="${l.id}"${String(l.id) === current ? ' selected' : ''}>${esc(l.title)}</option>`).join('');
+}
+
+function filterLog(liveId) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('.tab:last-child').classList.add('active');
+  document.getElementById('tab-lives').style.display = 'none';
+  document.getElementById('tab-log').style.display   = '';
+  document.getElementById('log-filter').value = String(liveId);
+  loadLog();
+}
+
+async function loadLog() {
+  const liveId  = document.getElementById('log-filter').value;
+  const tbody   = document.getElementById('log-body');
+  tbody.innerHTML = '<tr><td colspan="3" class="log-empty">Laden...</td></tr>';
+
+  try {
+    const url = '/api/admin/log' + (liveId ? `?live_id=${liveId}` : '');
+    const r   = await apiFetch(url);
+    const rows = await r.json();
+
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="3" class="log-empty">Nog geen bezoekers ingelogd.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = rows.map(row => {
+      const date = new Date(row.logged_in_at);
+      const formatted = date.toLocaleString('nl-NL', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+      const liveTitle = row.lives?.title || `Live #${row.live_id}`;
+      return `<tr>
+        <td class="log-name">${esc(row.name)}</td>
+        <td class="log-live">${esc(liveTitle)}</td>
+        <td class="log-time">${formatted}</td>
+      </tr>`;
+    }).join('');
+  } catch {
+    tbody.innerHTML = '<tr><td colspan="3" class="log-empty" style="color:var(--red);">Fout bij laden.</td></tr>';
+  }
+}
+
+/* ═══════════════════════════════════
+   UTILS
+═══════════════════════════════════ */
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Close modals on overlay click
+document.getElementById('create-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeCreateModal();
+});
+document.getElementById('edit-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeEditModal();
+});
+
+// ESC to close
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeCreateModal();
+    closeEditModal();
+  }
+});
+
+initAdmin();
+</script>
+</body>
+</html>

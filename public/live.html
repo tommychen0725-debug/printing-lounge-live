@@ -526,15 +526,22 @@
     <div class="auth-live-date" id="auth-live-date"></div>
     <div class="auth-rule"></div>
     <form class="auth-form" id="auth-form">
-      <label class="auth-label">Toegangscode</label>
+      <label class="auth-label">Jouw naam</label>
+      <input type="text" id="auth-name" class="auth-input"
+             placeholder="Voor- en achternaam" autocomplete="name" autofocus
+             style="letter-spacing:0;">
+      <label class="auth-label" style="margin-top:4px;">Toegangscode</label>
       <input type="password" id="auth-input" class="auth-input"
-             placeholder="● ● ● ● ● ● ●" autocomplete="off" autofocus>
+             placeholder="● ● ● ● ● ● ●" autocomplete="off">
       <div class="auth-error" id="auth-error"></div>
       <button type="submit" class="auth-btn" id="auth-btn">
         Toegang <span>→</span>
       </button>
     </form>
-    <a href="/" class="auth-back">← Terug naar overzicht</a>
+    <div style="display:flex;justify-content:space-between;margin-top:18px;">
+      <a href="/" class="auth-back">← Overzicht</a>
+      <a href="/admin" class="auth-back">Admin →</a>
+    </div>
   </div>
 </div>
 
@@ -609,11 +616,16 @@
 ════════════════════════════════ */
 const slug = (location.pathname.split('/live/')[1] || '').replace(/\/$/, '');
 
-let JWT   = localStorage.getItem(`pl-jwt-${slug}`) || '';
-let LIVE  = null;
-let DAYS  = [];
-let TOTAL = 1;
+let JWT     = '';
+let LIVE    = null;
+let DAYS    = [];
+let TOTAL   = 1;
 let current = 0;
+let isAdmin = false;
+
+function decodeJWT(token) {
+  try { return JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))); } catch { return null; }
+}
 
 /* ════════════════════════════════
    API HELPERS
@@ -636,7 +648,7 @@ function apiPost(path, body) {
    AUTH
 ════════════════════════════════ */
 async function initApp() {
-  // Load basic info for overlay (always, regardless of JWT)
+  // Always load basic info for the overlay
   fetch(`/api/live-info/${slug}`)
     .then(r => r.ok ? r.json() : null)
     .then(info => {
@@ -647,31 +659,57 @@ async function initApp() {
     })
     .catch(() => {});
 
-  // Try stored JWT
-  if (JWT) {
+  // 1. Check admin JWT first (Tommy in edit mode)
+  const adminJWT = localStorage.getItem('pl-admin-jwt');
+  if (adminJWT) {
     try {
-      const r = await apiFetch(`/api/live/${slug}`);
-      if (r.ok) {
-        LIVE = await r.json();
-        DAYS = LIVE.days || [];
-        await showApp();
-        return;
+      const decoded = decodeJWT(adminJWT);
+      if (decoded?.exp > Date.now() / 1000 && decoded.role === 'admin') {
+        const r = await fetch(`/api/live/${slug}`, { headers: { Authorization: `Bearer ${adminJWT}` } });
+        if (r.ok) {
+          JWT     = adminJWT;
+          isAdmin = true;
+          LIVE    = await r.json();
+          DAYS    = LIVE.days || [];
+          await showApp(true);
+          return;
+        }
       }
     } catch {}
-    // JWT invalid — clear and show form
-    JWT = '';
+  }
+
+  // 2. Check stored guest JWT
+  const guestJWT = localStorage.getItem(`pl-jwt-${slug}`);
+  if (guestJWT) {
+    try {
+      const decoded = decodeJWT(guestJWT);
+      if (decoded?.exp > Date.now() / 1000) {
+        const r = await fetch(`/api/live/${slug}`, { headers: { Authorization: `Bearer ${guestJWT}` } });
+        if (r.ok) {
+          JWT  = guestJWT;
+          LIVE = await r.json();
+          DAYS = LIVE.days || [];
+          await showApp(false);
+          return;
+        }
+      }
+    } catch {}
     localStorage.removeItem(`pl-jwt-${slug}`);
   }
 
-  // Show auth overlay (already visible by default)
+  // 3. Show auth overlay
 }
 
 document.getElementById('auth-form').addEventListener('submit', async e => {
   e.preventDefault();
+  const name     = document.getElementById('auth-name').value.trim();
   const passcode = document.getElementById('auth-input').value.trim();
   const errEl    = document.getElementById('auth-error');
   const btn      = document.getElementById('auth-btn');
-  if (!passcode) return;
+  if (!name || !passcode) {
+    errEl.textContent = 'Vul je naam en de toegangscode in.';
+    return;
+  }
   errEl.textContent = '';
   btn.disabled = true;
   btn.textContent = 'Laden...';
@@ -680,7 +718,7 @@ document.getElementById('auth-form').addEventListener('submit', async e => {
     const r = await fetch('/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug, passcode })
+      body: JSON.stringify({ slug, passcode, name })
     });
     const data = await r.json();
     if (!r.ok) {
@@ -689,11 +727,12 @@ document.getElementById('auth-form').addEventListener('submit', async e => {
       btn.innerHTML = 'Toegang <span>→</span>';
       return;
     }
-    JWT  = data.token;
-    LIVE = data.live;
-    DAYS = data.live.days || [];
+    JWT     = data.token;
+    isAdmin = false;
+    LIVE    = data.live;
+    DAYS    = data.live.days || [];
     localStorage.setItem(`pl-jwt-${slug}`, JWT);
-    await showApp();
+    await showApp(false);
   } catch {
     errEl.textContent = 'Verbindingsfout. Probeer opnieuw.';
     btn.disabled = false;
@@ -701,23 +740,35 @@ document.getElementById('auth-form').addEventListener('submit', async e => {
   }
 });
 
-async function showApp() {
-  // Update title slide content
+async function showApp(adminMode = false) {
+  isAdmin = adminMode;
+
+  // Update title slide
   const title = LIVE.title || 'Beste Trades';
   const parts = title.split('—').map(s => s.trim());
   document.getElementById('live-h1').textContent         = parts[0] || title;
   document.getElementById('live-date-range').textContent = LIVE.date_range || '';
-  document.getElementById('live-sub').textContent        = `${(DAYS.length || 10)} handelsdagen · ${LIVE.subtitle || 'NQ Intraday'}`;
+  document.getElementById('live-sub').textContent        = `${DAYS.length || 10} handelsdagen · ${LIVE.subtitle || 'NQ Intraday'}`;
   document.title = `Printing Lounge — ${LIVE.title}`;
 
   // Build trade slides
   buildAllSlides();
-
-  // Init presentation
   TOTAL = DAYS.length + 1;
-  document.body.classList.add('edit-mode');
-  showSlide(0);
   resizeCanvas();
+
+  // Set mode based on role
+  if (adminMode) {
+    // Admin: edit mode (can upload, change text)
+    document.body.classList.add('edit-mode');
+    editMode = true;
+  } else {
+    // Guest: locked in present mode — view only
+    document.body.classList.add('present-mode');
+    document.getElementById('mode-btn').style.display = 'none';
+    editMode = false;
+  }
+
+  showSlide(0);
 
   // Fade in app, fade out overlay
   document.getElementById('app').classList.add('visible');
@@ -725,7 +776,6 @@ async function showApp() {
   overlay.classList.add('hidden');
   setTimeout(() => overlay.style.display = 'none', 350);
 
-  // Load saved data
   await restoreAll();
 }
 
@@ -986,14 +1036,14 @@ function loadImg(input, slotId, imgId) {
     localStorage.setItem('pl-' + slotId, base64);
     input.value = '';
 
-    // Upload to server in background
+    // Upload to server in background (admin only — guests are view-only)
     const m = slotId.match(/^s(\d+)-(.+)$/);
-    if (m && JWT) {
+    if (m && JWT && isAdmin) {
       const slot = document.getElementById(slotId);
       slot && slot.classList.add('uploading');
       try {
         const r = await apiPost('/api/upload', {
-          slide_idx: parseInt(m[1]), slot_key: m[2], base64
+          slide_idx: parseInt(m[1]), slot_key: m[2], base64, live_id: LIVE.id
         });
         if (r.ok) {
           const { url } = await r.json();
@@ -1019,8 +1069,8 @@ function removeImg(event, slotId, imgId) {
   localStorage.removeItem('pl-' + slotId);
 
   const m = slotId.match(/^s(\d+)-(.+)$/);
-  if (m && JWT) {
-    apiPost('/api/save', { slide_idx: parseInt(m[1]), slot_key: m[2], value: null }).catch(() => {});
+  if (m && JWT && isAdmin) {
+    apiPost('/api/save', { slide_idx: parseInt(m[1]), slot_key: m[2], value: null, live_id: LIVE.id }).catch(() => {});
   }
 }
 
@@ -1050,11 +1100,11 @@ function swapWithMain(slideIdx, tfKey) {
   if (mainSaved) localStorage.setItem('pl-' + tfId, mainSaved);
   else           localStorage.removeItem('pl-' + tfId);
 
-  if (JWT) {
+  if (JWT && isAdmin) {
     const newMain = document.getElementById(`img-${mainId}`)?.src || null;
     const newTf   = document.getElementById(`img-${tfId}`)?.src   || null;
-    apiPost('/api/save', { slide_idx: slideIdx, slot_key: 'main', value: newMain || null }).catch(() => {});
-    apiPost('/api/save', { slide_idx: slideIdx, slot_key: tfKey,  value: newTf   || null }).catch(() => {});
+    apiPost('/api/save', { slide_idx: slideIdx, slot_key: 'main', value: newMain || null, live_id: LIVE.id }).catch(() => {});
+    apiPost('/api/save', { slide_idx: slideIdx, slot_key: tfKey,  value: newTf   || null, live_id: LIVE.id }).catch(() => {});
   }
 }
 
@@ -1071,11 +1121,11 @@ document.addEventListener('drop', e => {
   reader.onload = ev => {
     setSlotImg(slot.id, imgId, ev.target.result);
     localStorage.setItem('pl-' + slot.id, ev.target.result);
-    // Also upload
+    // Also upload (admin only)
     const m = slot.id.match(/^s(\d+)-(.+)$/);
-    if (m && JWT) {
+    if (m && JWT && isAdmin) {
       apiPost('/api/upload', {
-        slide_idx: parseInt(m[1]), slot_key: m[2], base64: ev.target.result
+        slide_idx: parseInt(m[1]), slot_key: m[2], base64: ev.target.result, live_id: LIVE.id
       }).then(r => r.ok && r.json()).then(d => {
         if (d?.url) {
           document.getElementById(imgId).src = d.url;
@@ -1100,10 +1150,10 @@ document.getElementById('slides').addEventListener('input', e => {
   const text = e.target.value;
   localStorage.setItem(`pl-notes-${idx}`, text);
 
-  if (JWT) {
+  if (JWT && isAdmin) {
     clearTimeout(notesTimers[idx]);
     notesTimers[idx] = setTimeout(() => {
-      apiPost('/api/save', { slide_idx: idx, slot_key: 'notes', value: text }).catch(() => {});
+      apiPost('/api/save', { slide_idx: idx, slot_key: 'notes', value: text, live_id: LIVE.id }).catch(() => {});
     }, 800);
   }
 });
