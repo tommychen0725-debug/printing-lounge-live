@@ -3,6 +3,11 @@ const jwt     = require('jsonwebtoken');
 const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
 
+// Node 18 WebSocket compat for Supabase Realtime
+if (!globalThis.WebSocket) {
+  globalThis.WebSocket = require('ws');
+}
+
 const app = express();
 app.use(express.json({ limit: '30mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
