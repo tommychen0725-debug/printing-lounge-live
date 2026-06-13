@@ -1,0 +1,11 @@
+{
+  "name": "printing-lounge-live",
+  "version": "1.0.0",
+  "description": "Printing Lounge — Live Trade Review Presentation",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
