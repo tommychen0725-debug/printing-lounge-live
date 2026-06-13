@@ -131,7 +131,7 @@ app.get('/admin', (req, res) => {
 app.get('/api/lives', async (req, res) => {
   const { data, error } = await supabase
     .from('lives')
-    .select('id, slug, title, subtitle, date_range, is_active, created_at')
+    .select('id, slug, title, subtitle, date_range, sunday_date, is_active, created_at')
     .order('created_at', { ascending: false });
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
@@ -299,7 +299,7 @@ app.post('/api/admin/auth', (req, res) => {
 app.get('/api/admin/lives', requireAdmin, async (req, res) => {
   const { data: lives, error } = await supabase
     .from('lives')
-    .select('*')
+    .select('id, slug, title, subtitle, date_range, sunday_date, passcode, is_active, created_at, days')
     .order('created_at', { ascending: false });
   if (error) return res.status(500).json({ error: error.message });
 
@@ -317,7 +317,7 @@ app.get('/api/admin/lives', requireAdmin, async (req, res) => {
 
 // Create new live
 app.post('/api/admin/lives', requireAdmin, async (req, res) => {
-  const { title, subtitle, start_date, num_weeks, passcode } = req.body || {};
+  const { title, subtitle, start_date, num_weeks, passcode, sunday_date } = req.body || {};
   if (!title || !start_date || !passcode) {
     return res.status(400).json({ error: 'Titel, startdatum en code zijn verplicht' });
   }
@@ -335,11 +335,12 @@ app.post('/api/admin/lives', requireAdmin, async (req, res) => {
     .insert({
       slug,
       title,
-      subtitle:   subtitle || 'NQ Intraday',
-      date_range: dateRange,
+      subtitle:    subtitle || 'NQ Intraday',
+      date_range:  dateRange,
+      sunday_date: sunday_date || null,
       days,
       passcode,
-      is_active:  true
+      is_active:   true
     })
     .select()
     .single();
@@ -350,7 +351,7 @@ app.post('/api/admin/lives', requireAdmin, async (req, res) => {
 
 // Update live (passcode, title, is_active, etc.)
 app.patch('/api/admin/lives/:id', requireAdmin, async (req, res) => {
-  const allowed = ['title', 'subtitle', 'date_range', 'passcode', 'is_active'];
+  const allowed = ['title', 'subtitle', 'date_range', 'sunday_date', 'passcode', 'is_active'];
   const updates = {};
   allowed.forEach(k => { if (req.body[k] !== undefined) updates[k] = req.body[k]; });
 

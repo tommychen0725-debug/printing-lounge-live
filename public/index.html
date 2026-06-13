@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Printing Lounge — Live Sessions</title>
+  <title>Printing Lounge — Zondag Lives</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -193,7 +193,7 @@
 <header class="site-header">
   <div class="site-logo">Printing Lounge</div>
   <div class="hdr-sep"></div>
-  <div class="hdr-pill">Live Sessions</div>
+  <div class="hdr-pill">Zondag Lives</div>
   <div style="flex:1;"></div>
   <a href="/admin" style="
     font-family:var(--font);font-size:12px;font-weight:600;
@@ -209,7 +209,7 @@
 
 <main class="container">
   <div class="section-pill">Overzicht</div>
-  <h1 class="page-title">Live Review Sessions</h1>
+  <h1 class="page-title">Zondag Lives</h1>
   <p class="page-sub">Klik op een sessie om in te loggen en de review te starten.</p>
 
   <div class="lives-grid" id="lives-grid">
@@ -241,11 +241,10 @@ async function loadLives() {
 
     grid.innerHTML = lives.map(live => `
       <a class="live-card" href="/live/${escHtml(live.slug)}">
-        <div class="card-status${live.is_active ? ' active' : ''}">${live.is_active ? 'Live' : 'Archief'}</div>
         <div class="card-title">${escHtml(live.title)}</div>
         <div class="card-sub">${escHtml(live.subtitle || 'NQ Intraday')}</div>
         <div class="card-rule"></div>
-        <div class="card-date">${escHtml(live.date_range || '')}</div>
+        ${live.sunday_date ? `<div class="card-date">Zondag · ${escHtml(live.sunday_date)}</div>` : ''}
         <div class="card-cta">Bekijk sessie <span class="card-cta-arrow">→</span></div>
       </a>
     `).join('');

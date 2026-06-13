@@ -286,14 +286,14 @@
   <div class="container">
 
     <div class="tabs">
-      <button class="tab active" onclick="showTab('lives')">Live Sessions</button>
+      <button class="tab active" onclick="showTab('lives')">Zondag Lives</button>
       <button class="tab"        onclick="showTab('log')">Toegangslog</button>
     </div>
 
     <!-- Lives tab -->
     <div id="tab-lives">
       <div class="sec-head">
-        <h2 class="sec-title">Live Sessions</h2>
+        <h2 class="sec-title">Zondag Lives</h2>
         <div class="sec-spacer"></div>
         <button class="btn-create" onclick="openCreateModal()">
           <span class="plus">+</span> Nieuwe Live
@@ -366,6 +366,10 @@
       <label class="form-label">Toegangscode *</label>
       <input type="text" id="c-code" class="form-input" placeholder="PL2026" autocomplete="off" style="letter-spacing:2px;">
     </div>
+    <div class="form-group">
+      <label class="form-label">Datum zondag (zichtbaar op landing page)</label>
+      <input type="text" id="c-sunday" class="form-input" placeholder="14 Juni 2026">
+    </div>
     <div class="modal-error" id="create-error"></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeCreateModal()">Annuleren</button>
@@ -393,6 +397,10 @@
     <div class="form-group">
       <label class="form-label">Datum range (zichtbaar in presentatie)</label>
       <input type="text" id="e-daterange" class="form-input" placeholder="1 Juni — 12 Juni 2026">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Datum zondag (zichtbaar op landing page)</label>
+      <input type="text" id="e-sunday" class="form-input" placeholder="14 Juni 2026">
     </div>
     <div class="form-group">
       <label class="form-label">Toegangscode</label>
@@ -637,15 +645,16 @@ async function createLive() {
   try {
     const r = await apiFetch('/api/admin/lives', {
       method: 'POST',
-      body: JSON.stringify({ title, subtitle, start_date: start, num_weeks: weeks, passcode })
+      body: JSON.stringify({ title, subtitle, start_date: start, num_weeks: weeks, passcode, sunday_date: document.getElementById('c-sunday').value.trim() || null })
     });
     const d = await r.json();
     if (!r.ok) { errEl.textContent = d.error || 'Fout'; btn.disabled = false; btn.textContent = 'Aanmaken →'; return; }
     closeCreateModal();
     loadLives();
     // Reset form
-    document.getElementById('c-title').value = '';
-    document.getElementById('c-code').value  = '';
+    document.getElementById('c-title').value   = '';
+    document.getElementById('c-code').value    = '';
+    document.getElementById('c-sunday').value  = '';
     document.getElementById('c-subtitle').value = 'NQ Intraday';
   } catch {
     errEl.textContent = 'Verbindingsfout.';
@@ -665,6 +674,7 @@ function openEditModal(id) {
   document.getElementById('e-title').value     = live.title;
   document.getElementById('e-subtitle').value  = live.subtitle || '';
   document.getElementById('e-daterange').value = live.date_range || '';
+  document.getElementById('e-sunday').value    = live.sunday_date || '';
   document.getElementById('e-code').value      = live.passcode;
   document.getElementById('edit-slug').textContent = `/live/${live.slug}`;
   editActiveState = live.is_active;
@@ -684,19 +694,20 @@ function toggleActive() {
 }
 
 async function saveLive() {
-  const id        = document.getElementById('e-id').value;
-  const title     = document.getElementById('e-title').value.trim();
-  const subtitle  = document.getElementById('e-subtitle').value.trim();
-  const daterange = document.getElementById('e-daterange').value.trim();
-  const passcode  = document.getElementById('e-code').value.trim();
-  const errEl     = document.getElementById('edit-error');
+  const id          = document.getElementById('e-id').value;
+  const title       = document.getElementById('e-title').value.trim();
+  const subtitle    = document.getElementById('e-subtitle').value.trim();
+  const daterange   = document.getElementById('e-daterange').value.trim();
+  const sunday_date = document.getElementById('e-sunday').value.trim() || null;
+  const passcode    = document.getElementById('e-code').value.trim();
+  const errEl       = document.getElementById('edit-error');
   errEl.textContent = '';
 
   if (!title || !passcode) { errEl.textContent = 'Titel en code zijn verplicht.'; return; }
 
   const r = await apiFetch(`/api/admin/lives/${id}`, {
     method: 'PATCH',
-    body: JSON.stringify({ title, subtitle, date_range: daterange, passcode, is_active: editActiveState })
+    body: JSON.stringify({ title, subtitle, date_range: daterange, sunday_date, passcode, is_active: editActiveState })
   });
   const d = await r.json();
   if (!r.ok) { errEl.textContent = d.error || 'Fout bij opslaan.'; return; }
