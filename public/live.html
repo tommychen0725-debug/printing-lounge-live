@@ -248,7 +248,9 @@
     .title-logo-text {
       font-size: 13px; font-weight: 700;
       color: rgba(255,255,255,0.35); letter-spacing: 2px; text-transform: uppercase;
+      text-decoration: none;
     }
+    .title-logo-text:hover { color: rgba(255,255,255,0.65); }
     .title-h1 {
       font-size: clamp(36px, 4.5vw, 68px); font-weight: 700;
       color: var(--white); line-height: 1.08; letter-spacing: -0.5px;
@@ -272,7 +274,8 @@
       background: var(--dark); height: 64px; flex-shrink: 0;
       display: flex; align-items: center; padding: 0 28px; gap: 16px;
     }
-    .hdr-logo { font-size: 14px; font-weight: 700; color: var(--white); letter-spacing: 0.3px; flex-shrink: 0; }
+    .hdr-logo { font-size: 14px; font-weight: 700; color: var(--white); letter-spacing: 0.3px; flex-shrink: 0; text-decoration: none; }
+    .hdr-logo:hover { opacity: 0.75; }
     .hdr-sep  { width: 1px; height: 18px; background: rgba(255,255,255,0.18); flex-shrink: 0; }
     .hdr-pill {
       display: inline-flex; align-items: center; gap: 6px;
@@ -554,7 +557,7 @@
     <!-- Title slide (static, content updated after auth) -->
     <div class="slide slide-title active" id="slide-0">
       <div class="title-inner">
-        <div class="title-logo-text">Printing Lounge</div>
+        <a href="/" class="title-logo-text">Printing Lounge</a>
         <div class="title-pill">Live Review Session</div>
         <h1 class="title-h1" id="live-h1">Beste Trades</h1>
         <div class="title-rule"></div>
@@ -808,7 +811,7 @@ function fileInputs(i) {
 
 function hdr(d, extra = '') {
   return `<div class="slide-header${d.week === 2 ? ' hdr-w2' : ''}">
-    <span class="hdr-logo">Printing Lounge</span><div class="hdr-sep"></div>
+    <a href="/" class="hdr-logo">Printing Lounge</a><div class="hdr-sep"></div>
     <div class="hdr-pill">Dag ${d.num}</div>
     <div class="hdr-date">${d.label} 2026</div>${extra}
     <div class="hdr-spacer"></div>
