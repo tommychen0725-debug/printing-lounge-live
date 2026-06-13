@@ -511,8 +511,10 @@
     body.edit-mode #zoom-ind     { display: none !important; }
 
     /* ── PRESENT MODE: slots & textareas locked ── */
-    body.present-mode .img-slot  { pointer-events: none !important; cursor: default !important; }
-    body.present-mode textarea   { pointer-events: none !important; cursor: default !important; user-select: none; }
+    body.present-mode .img-slot              { pointer-events: none !important; cursor: default !important; }
+    body.present-mode textarea               { pointer-events: none !important; cursor: default !important; user-select: none; }
+    /* TF slots MET afbeelding blijven klikbaar voor swap */
+    body.present-mode .img-slot.tf-slot.has-image { pointer-events: all !important; cursor: pointer !important; }
 
     /* smooth slide zoom */
     .slide-trade { will-change: transform; }
@@ -1161,7 +1163,7 @@ let panDidMove = false;
 
 document.addEventListener('mousedown', e => {
   if (editMode || drawMode || e.button !== 0 || current === 0) return;
-  if (e.target.closest('button, textarea, input')) return;
+  if (e.target.closest('button, textarea, input, .tf-slot.has-image')) return;
   panAX = e.clientX; panAY = e.clientY;
   panAPX = panX;     panAPY = panY;
   panning = true;
