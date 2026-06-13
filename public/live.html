@@ -1003,6 +1003,7 @@ document.addEventListener('wheel', e => {
     }
   } else {
     if (current === 0 || editMode) return;
+    if (e.target.closest('.toelichting-card')) return;
     e.preventDefault();
     doZoom(e.deltaY > 0 ? 0.93 : 1.07, e.clientX, e.clientY);
   }
